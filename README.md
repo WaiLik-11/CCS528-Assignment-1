@@ -1,0 +1,160 @@
+# CCS528 Programming Assignment 1: From Shor to Lattices
+
+**Programming Quantum Threats and Post-Quantum Protection**
+
+| Member | Student ID | Responsibilities |
+|--------|-----------|------------------|
+| _Name 1_ | _ID_ | _e.g. Task 1, Task 4, Report_ |
+| _Name 2_ | _ID_ | _e.g. Task 2, Task 3, Task 5_ |
+
+- **Submission deadline:** 17/11/2026 (Tuesday, before 5 pm), via E-learn
+- **Demonstration:** 24/11/2026
+- **Task 5 application environment:** _TBD (must differ from other groups)_
+
+---
+
+## 1. Overview
+
+| Phase | Task | Description | Folder |
+|-------|------|-------------|--------|
+| BREAK | 1 | Shor's algorithm factoring an RSA modulus (N = 15) | [task1_shor/](task1_shor/) |
+| PROTECT | 2 | ML-KEM (FIPS 203) key establishment and an AES-GCM session | [task2_mlkem/](task2_mlkem/) |
+| PROTECT | 3 | ML-DSA (FIPS 204) signatures with tampering experiments | [task3_mldsa/](task3_mldsa/) |
+| COMPARE | 4 | Classical (RSA/ECDH/ECDSA) vs PQC benchmarks | [task4_benchmark/](task4_benchmark/) |
+| APPLY | 5 | Quantum-safe prototype for an emerging environment | [task5_application/](task5_application/) |
+
+## 2. Required Software
+
+| Software | Version | Purpose |
+|----------|---------|---------|
+| Python | 3.12 (recommended) | Main language. Python 3.14 may not have wheels for Qiskit yet |
+| Git | any | Version control |
+| CMake, Ninja and a C compiler | latest | Building `liboqs` (the C library behind `liboqs-python`) |
+
+On macOS:
+
+```bash
+xcode-select --install          # C compiler
+brew install cmake ninja python@3.12
+```
+
+## 3. Libraries / Toolkits
+
+| Library | Used in | Role |
+|---------|---------|------|
+| [Qiskit](https://quantum.cloud.ibm.com/) and Qiskit Aer | Task 1 | Builds the Shor circuit (modular exponentiation, inverse QFT) and simulates it |
+| [liboqs](https://github.com/open-quantum-safe/liboqs) / [liboqs-python](https://github.com/open-quantum-safe/liboqs-python) | Tasks 2, 3, 4, 5 | Open Quantum Safe implementations of ML-KEM-512/768/1024 and ML-DSA-44/65/87 |
+| [cryptography](https://cryptography.io/) | Tasks 2, 4, 5 | AES-256-GCM, HKDF, and the classical RSA/ECDH/ECDSA baselines (OpenSSL backend) |
+| NumPy, pandas | Tasks 1, 4 | Numerical work and storing results |
+| matplotlib | Tasks 1, 4 | Circuit diagrams, histograms and benchmark graphs |
+| psutil | Task 4 | CPU and memory measurements |
+
+## 4. Installation
+
+```bash
+git clone <repo-url>
+cd assignment-1
+
+python3.12 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# On first import, liboqs-python builds liboqs automatically (this takes a few minutes).
+python -c "import oqs; print(oqs.get_enabled_kem_mechanisms())"
+```
+
+## 5. Execution Procedure
+
+Run all commands from the repository root with the virtual environment activated.
+
+```bash
+python -m task1_shor.main            # BREAK:   Shor's algorithm for N = 15
+python -m task2_mlkem.main           # PROTECT: ML-KEM and an AES-GCM session
+python -m task3_mldsa.main           # PROTECT: ML-DSA, Experiments A and B
+python -m task4_benchmark.main       # COMPARE: writes CSVs and graphs to results/
+python -m task5_application.main     # APPLY:   quantum-safe prototype demo
+```
+
+Outputs (CSV files, figures and circuit diagrams) are written to [results/](results/).
+
+## 6. Program Structure
+
+```
+assignment-1/
+├── README.md               # This file (deliverable B)
+├── requirements.txt        # Python dependencies
+├── .gitignore
+├── common/                 # Shared helpers (timing, formatting, result saving)
+├── task1_shor/             # Task 1: BREAK, Shor's algorithm
+├── task2_mlkem/            # Task 2: PROTECT, ML-KEM (FIPS 203)
+├── task3_mldsa/            # Task 3: PROTECT, ML-DSA (FIPS 204)
+├── task4_benchmark/        # Task 4: Classical vs PQC comparison
+├── task5_application/      # Task 5: APPLY, quantum-safe prototype
+├── tests/                  # Correctness tests (pytest)
+├── results/                # Generated outputs (deliverable C evidence)
+│   ├── data/               #   raw CSV/JSON measurements
+│   ├── figures/            #   graphs and circuit diagrams
+│   └── screenshots/        #   terminal screenshots for the report
+├── report/                 # Technical report source and final PDF
+└── rubric/                 # Assignment brief and rubric (reference only)
+```
+
+## 7. Team Workflow
+
+1. Never commit directly to `main`. Create a branch for each task: `git checkout -b task2-mlkem`.
+2. Commit small changes often, then open a Pull Request so your teammate can review before merging.
+3. Pull before starting work: `git pull origin main`.
+4. Do not commit `.venv/`, build folders or large generated files (see `.gitignore`).
+5. Keep this repository **private** so other groups cannot copy it.
+
+## 8. Rubric Checklist (each criterion is 20%)
+
+> The rubric says: *"Simply executing existing toolkit examples without modification, experimentation or explanation will receive limited marks."*
+> Every task therefore needs original code, its own experiments, and a written explanation.
+
+### Task 1: Shor's Algorithm (20%)
+- [ ] Program prints every stage: Input N → choose a → GCD check → quantum period finding → inverse QFT → measurement → period estimation (continued fractions) → classical factor extraction → factors
+- [ ] Circuit diagram saved to `results/figures/`
+- [ ] Measurement histogram, with each peak explained (e.g. which values of s/r it represents)
+- [ ] Metrics: qubit count, circuit depth, gate counts, number of shots, execution time, success rate across several values of `a` and repeated runs
+- [ ] Explanation of how this breaks RSA (factoring N gives φ(N), which gives the private key d), with a toy RSA key recovered as proof
+- [ ] **Limitations**: hard-coded modular multiplication, simulator vs real hardware, noise, and qubit estimates for RSA-2048
+
+### Task 2: ML-KEM (20%)
+- [ ] KeyGen → Encaps → (ciphertext, shared secret) → Decaps → recovered secret, run as two separate parties (Alice and Bob)
+- [ ] Check that the shared secrets are equal, plus a negative test (tampered ciphertext gives a different secret because of implicit rejection)
+- [ ] Shared secret passed through HKDF into AES-256-GCM to encrypt and decrypt a message
+- [ ] Metrics for ML-KEM-512, 768 and 1024: keygen, encaps and decaps times (mean and standard deviation over N runs), plus pk, sk and ct sizes
+- [ ] Explanation of the Module-LWE basis and why Shor's algorithm does not apply
+
+### Task 3: ML-DSA and Tampering (20%)
+- [ ] KeyGen → Sign → Signature → Verify
+- [ ] **Experiment A**: original message verifies
+- [ ] **Experiment B**: tampered message fails verification
+- [ ] Extra tampering tests: flipped signature bit, wrong public key, truncated signature, single-bit message change
+- [ ] Metrics for ML-DSA-44, 65 and 87: keygen, sign and verify times, plus pk, sk and signature sizes
+- [ ] Explanation of what integrity, authenticity and non-repudiation mean here
+
+### Task 4: Benchmarking (20%)
+- [ ] KEM comparison: RSA-OAEP / ECDH (X25519, P-256) vs ML-KEM
+- [ ] Signature comparison: RSA-PSS / ECDSA / Ed25519 vs ML-DSA
+- [ ] At least 3 metrics (time, sizes, CPU/memory, communication overhead), repeated many times (e.g. 1000) with mean and standard deviation
+- [ ] Tables and graphs in `results/`
+- [ ] Critical analysis of the security, performance and resource trade-offs, comparing security levels like for like (e.g. ML-KEM-768 vs P-384 vs RSA-3072)
+
+### Task 5: Quantum-Safe Prototype (20%)
+- [ ] Chosen environment, plus the security problem and threat model (attacker capabilities, assets)
+- [ ] Architecture diagram
+- [ ] Normal operation: ML-DSA authentication → ML-KEM key exchange → AES-GCM data
+- [ ] At least one attack or failure scenario (e.g. impersonation, MITM key substitution, replay, tampered ciphertext) and how it is detected
+- [ ] Explanation of the security purpose of each component
+
+## 9. References
+
+1. NIST FIPS 203, *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, 2024.
+2. NIST FIPS 204, *Module-Lattice-Based Digital Signature Standard*, 2024.
+3. P. W. Shor, "Polynomial-Time Algorithms for Prime Factorization and Discrete Logarithms on a Quantum Computer," *SIAM J. Comput.*, 1997.
+4. Open Quantum Safe project: https://openquantumsafe.org/
+5. Qiskit documentation: https://quantum.cloud.ibm.com/
