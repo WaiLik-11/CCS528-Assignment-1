@@ -2,15 +2,13 @@
 
 **Programming Quantum Threats and Post-Quantum Protection**
 
-| Member | Student ID | Responsibilities |
-|--------|-----------|------------------|
-| _Name 1_ | _ID_ | _e.g. Task 1, Task 4, Report_ |
-| _Name 2_ | _ID_ | _e.g. Task 2, Task 3, Task 5_ |
+| Member | Student ID |
+|--------|-----------|
+| AU WAI LIK | 25203542 |
+| TIFFANY TIEN NEE PRAGASAM | 25203306 |
 
 - **Submission deadline:** 17/11/2026 (Tuesday, before 5 pm), via E-learn
 - **Demonstration:** 24/11/2026
-- **Task 5 application environment:** _TBD (must differ from other groups)_
-
 ---
 
 ## 1. Overview
@@ -27,15 +25,25 @@
 
 | Software | Version | Purpose |
 |----------|---------|---------|
-| Python | 3.12 (recommended) | Main language. Python 3.14 may not have wheels for Qiskit yet |
+| [uv](https://docs.astral.sh/uv/) | latest | Installs Python 3.12 and every dependency from `uv.lock`, so both machines get identical versions |
 | Git | any | Version control |
-| CMake, Ninja and a C compiler | latest | Building `liboqs` (the C library behind `liboqs-python`) |
+| C compiler | see below | Needed once to build `liboqs`, the C library behind `liboqs-python` (uv installs CMake and Ninja) |
 
-On macOS:
+The C compiler is the only part that differs between operating systems:
+
+| OS | How to get the C compiler |
+|----|---------------------------|
+| macOS | `xcode-select --install`. Skip this if `xcode-select -p` already prints a path; installing Git usually installs it too |
+| Windows | Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and tick **Desktop development with C++** |
+
+Install uv:
 
 ```bash
-xcode-select --install          # C compiler
-brew install cmake ninja python@3.12
+# macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 ## 3. Libraries / Toolkits
@@ -55,26 +63,27 @@ brew install cmake ninja python@3.12
 git clone <repo-url>
 cd assignment-1
 
-python3.12 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+uv sync          # creates .venv with Python 3.12 and the exact versions in uv.lock
 
-pip install --upgrade pip
-pip install -r requirements.txt
+# On first import, liboqs-python builds liboqs into ~/_oqs (this takes a few minutes, once per machine).
 
-# On first import, liboqs-python builds liboqs automatically (this takes a few minutes).
-python -c "import oqs; print(oqs.get_enabled_kem_mechanisms())"
+# On Windows, if the build cannot find a compiler, run it from the "x64 Native Tools Command Prompt for VS".
+uv run python -c "import oqs; print(oqs.get_enabled_kem_mechanisms())"
 ```
+
+To add a dependency, run `uv add <package>` and commit both `pyproject.toml` and `uv.lock`.
 
 ## 5. Execution Procedure
 
-Run all commands from the repository root with the virtual environment activated.
+Run all commands from the repository root.
 
 ```bash
-python -m task1_shor.main            # BREAK:   Shor's algorithm for N = 15
-python -m task2_mlkem.main           # PROTECT: ML-KEM and an AES-GCM session
-python -m task3_mldsa.main           # PROTECT: ML-DSA, Experiments A and B
-python -m task4_benchmark.main       # COMPARE: writes CSVs and graphs to results/
-python -m task5_application.main     # APPLY:   quantum-safe prototype demo
+uv run python -m task1_shor.main            # BREAK:   Shor's algorithm for N = 15
+uv run python -m task2_mlkem.main           # PROTECT: ML-KEM and an AES-GCM session
+uv run python -m task3_mldsa.main           # PROTECT: ML-DSA, Experiments A and B
+uv run python -m task4_benchmark.main       # COMPARE: writes CSVs and graphs to results/
+uv run python -m task5_application.main     # APPLY:   quantum-safe prototype demo
+uv run pytest                               # run tests
 ```
 
 Outputs (CSV files, figures and circuit diagrams) are written to [results/](results/).
@@ -84,7 +93,9 @@ Outputs (CSV files, figures and circuit diagrams) are written to [results/](resu
 ```
 assignment-1/
 ├── README.md               # This file (deliverable B)
-├── requirements.txt        # Python dependencies
+├── pyproject.toml          # Python dependencies (managed by uv)
+├── uv.lock                 # Exact pinned versions, shared by the team
+├── .python-version         # Python 3.12
 ├── .gitignore
 ├── common/                 # Shared helpers (timing, formatting, result saving)
 ├── task1_shor/             # Task 1: BREAK, Shor's algorithm

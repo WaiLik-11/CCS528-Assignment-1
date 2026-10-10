@@ -1,0 +1,35 @@
+[project]
+name = "ccs528-assignment-1"
+version = "0.1.0"
+description = "From Shor to Lattices: Programming Quantum Threats and Post-Quantum Protection"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # Task 1: quantum simulation
+    "qiskit>=1.2",
+    "qiskit-aer>=0.15",
+    "pylatexenc>=2.10",
+    # Tasks 2-5: post-quantum crypto (builds liboqs C library on first import)
+    "liboqs-python",
+    # Classical baselines, AES-GCM, HKDF
+    "cryptography>=43",
+    # Benchmarking and plotting
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "matplotlib>=3.8",
+    "psutil>=5.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    # Build tools for liboqs, installed via pip so both OSes get the same versions
+    "cmake>=3.28",
+    "ninja>=1.11",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+liboqs-python = { git = "https://github.com/open-quantum-safe/liboqs-python.git" }
