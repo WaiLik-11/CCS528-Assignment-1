@@ -41,3 +41,7 @@ report/**/*.toc
 report/**/*.synctex.gz
 report/**/*.fdb_latexmk
 report/**/*.fls
+
+# Task 5 private key files – never commit
+keys/
+*.sk
