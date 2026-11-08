@@ -136,11 +136,13 @@ assignment-1/
 - [ ] **Limitations**: hard-coded modular multiplication, simulator vs real hardware, noise, and qubit estimates for RSA-2048
 
 ### Task 2: ML-KEM (20%)
-- [ ] KeyGen → Encaps → (ciphertext, shared secret) → Decaps → recovered secret, run as two separate parties (Alice and Bob)
-- [ ] Check that the shared secrets are equal, plus a negative test (tampered ciphertext gives a different secret because of implicit rejection)
-- [ ] Shared secret passed through HKDF into AES-256-GCM to encrypt and decrypt a message
-- [ ] Metrics for ML-KEM-512, 768 and 1024: keygen, encaps and decaps times (mean and standard deviation over N runs), plus pk, sk and ct sizes
-- [ ] Explanation of the Module-LWE basis and why Shor's algorithm does not apply
+- [x] KeyGen → Encaps → (ciphertext, shared secret) → Decaps → recovered secret, run as two separate parties (Alice and Bob)
+- [x] Check that the shared secrets are equal, plus a negative test (tampered ciphertext gives a different secret because of implicit rejection)
+- [x] Shared secret passed through HKDF into AES-256-GCM to encrypt and decrypt a message
+- [x] Metrics for ML-KEM-512, 768 and 1024: keygen, encaps and decaps times (mean and standard deviation over N runs), plus pk, sk and ct sizes
+- [x] Explanation of the Module-LWE basis and why Shor's algorithm does not apply
+
+Details, results and explanation: [task2_mlkem/README.md](task2_mlkem/README.md).
 
 ### Task 3: ML-DSA and Tampering (20%)
 - [ ] KeyGen → Sign → Signature → Verify

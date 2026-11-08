@@ -5,7 +5,8 @@ from common.pqc import (
 )
 from .transaction import Transaction, canonical_json
 
-AAD_PREFIX = b"PQBlockchain-CCS528-secure-submission|"
+KEM_NAME = "ML-KEM-768"
+AAD_PREFIX = b"PQBlockchain-secure-submission|"
 
 def _transaction_metadata(tx):
     return {
@@ -29,7 +30,7 @@ def encrypt_submission(validator_public_key, payload, expected_fingerprint):
     metadata = _transaction_metadata(tx)
 
     # Encrypt the payload with a one-shot ML-KEM + HKDF + AES-256-GCM envelop
-    kem_ct, shared_secret = kem_encapsulate(validator_public_key)
+    kem_ct, shared_secret = kem_encapsulate(validator_public_key, KEM_NAME)
     key = derive_aes_key(shared_secret, kem_ct, context=AAD_PREFIX)
     nonce, ciphertext = aes_gcm_encrypt(
         key, payload, aad=_aad_for_submission(kem_ct, metadata)

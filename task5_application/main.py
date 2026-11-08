@@ -6,12 +6,12 @@ from .pqc_blockchain.registry import Registry
 from .pqc_blockchain.ledger import Ledger
 from .pqc_blockchain.validator import Validator
 from .pqc_blockchain.node import ValidatorNode
-from .pqc_blockchain.secure_channel import encrypt_submission
+from .pqc_blockchain.secure_channel import KEM_NAME, encrypt_submission
 
 def build_demo():
     alice = Wallet("Alice")
     bob = Wallet("Bob")
-    validator_kem = PQCKEMRecipient()
+    validator_kem = PQCKEMRecipient(KEM_NAME)
     registry = Registry()
     alice_address = registry.register_wallet(alice.public_key)
     bob_address = registry.register_wallet(bob.public_key)
@@ -28,7 +28,7 @@ def build_demo():
 
 def normal_demo():
     alice, bob, registry, ledger, validator, node, kem = build_demo()
-    tx = alice.create_transaction("Bob", 25, nonce=0)
+    tx = alice.create_transaction(bob.address, 25, nonce=0)
     
     # In a real deployment, the sender would obtain this public key through
     # an authenticated registry/PKI, not trust an arbitrary network response.
@@ -36,7 +36,7 @@ def normal_demo():
     trusted_fingerprint = registry.validator_kem_fingerprint()
 
     # Demonstrate KEM agreement without displaying the secret itself.
-    demo_ct, sender_ss = kem_encapsulate(trusted_kem_pk)
+    demo_ct, sender_ss = kem_encapsulate(trusted_kem_pk, KEM_NAME)
     validator_ss = kem.decapsulate(demo_ct)
     print("ML-KEM shared-secret agreement:", sender_ss == validator_ss)
 
@@ -77,7 +77,7 @@ def attack_demo():
     # Key substitution: sender encrypts to an attacker-controlled KEM public key
     # instead of the registry-pinned validator public key. The real validator
     # cannot decapsulate this envelope successfully.
-    attacker_kem = PQCKEMRecipient()
+    attacker_kem = PQCKEMRecipient(KEM_NAME)
     try:
         # The attacker's public key does not match the trusted validator pin.
         encrypt_submission(attacker_kem.public_key, tx.to_bytes(), registry.validator_kem_fingerprint())
