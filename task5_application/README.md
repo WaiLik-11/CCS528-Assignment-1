@@ -1,99 +1,97 @@
 # Task 5: Post-Quantum Secure Blockchain Transactions (APPLY)
 
-A small local, permissioned blockchain prototype. Users authorize transfers with **ML-DSA-65**, the transaction details travel to the node encrypted with **ML-KEM-768 + HKDF + AES-256-GCM**, and accepted transactions go into a **hash-linked ledger**.
+This prototype demonstrates a minimal, local, permissioned blockchain workflow using:
 
-> Prototype only. It does not make Bitcoin or Ethereum quantum-safe, has no real consensus, and does not demonstrate a quantum attack.
+- ML-DSA-65 digital signatures (FIPS 204)
+- ML-KEM-768 key-establishment (FIPS 203)
+- HKDF-SHA-256 key derivation
+- AES-256-GCM payload encryption
+- SHA-256 hash-linked blocks
+- Public-key-derived wallet addresses and a trusted validator registry
+
+Users authorize transfers with ML-DSA-65, the transaction payload is encrypted with ML-KEM-768 + HKDF + AES-256-GCM, and accepted transactions are appended to a hash-linked ledger.
+
+> This is a local PoC, not a distributed blockchain implementation. It intentionally excludes consensus, network-wide validation, persistent storage, and full production key management.
 
 ## 1. Security problem and threat model
 
-Classical signature and key-exchange algorithms could be broken by a future quantum computer (Task 1). The prototype protects three things:
+A future quantum computer could break classical public-key cryptography. This prototype focuses on three goals:
 
 | Concern | Mechanism |
 |---|---|
-| Transaction authenticity | ML-DSA-65 signature checked against the sender's registered public key |
+| Transaction authenticity | ML-DSA-65 signature verified against the sender's registered public key |
 | Confidentiality in transit | ML-KEM-768 shared secret, HKDF, AES-256-GCM |
-| Ledger integrity | SHA-256 hash links and `validate_chain()` |
+| Ledger integrity | SHA-256 hash links and `ledger.validate_chain()` |
 
-- **Attacker can:** read and modify network traffic, submit transactions, resubmit captured ones, edit stored blocks.
-- **Attacker cannot:** steal private keys or break ML-DSA/ML-KEM/AES.
-- **Assets:** balances, signed transactions, private payloads, ledger history.
-- **Out of scope:** consensus, a full chain rebuild by a powerful attacker, side channels, real money.
+- Attacker can: read or tamper with network traffic, forge submitted transactions, replay captured transactions, and alter stored blocks.
+- Attacker cannot: steal private keys or break ML-DSA, ML-KEM, or AES.
+- Assets: wallet balances, signed transactions, encrypted payloads, ledger history.
+- Out of scope: consensus, large-scale deployment, full PKI, side-channel hardening, real money.
 
 ## 2. Architecture
 
-```
-Alice wallet            Secure channel               Validator node                Ledger
-creates tx +    -->  ML-KEM-768 -> HKDF ->   -->  decrypt, then check:   -->  hash-linked blocks,
-ML-DSA signature     AES-256-GCM                  chain_id, sender,           balances, nonces,
-                                                  signature, nonce, balance   rejection log
-```
-
-Each part has one job:
-
-| Component | Algorithm | Purpose |
-|---|---|---|
-| Transaction signature | ML-DSA-65 | Authenticity and integrity of the transaction |
-| Node KEM key signed by the node's ML-DSA key | ML-DSA-65 | Stops key substitution (MITM) |
-| Key establishment | ML-KEM-768 | Shared secret between client and node |
-| Key derivation | HKDF-SHA256 | Turns the secret into an AES key |
-| Payload encryption | AES-256-GCM | Confidentiality and tamper detection |
-| Ledger | SHA-256 | Detects edits to stored blocks |
-
-ML-KEM is used only for key establishment. ML-DSA is used only for signing.
-
-## 3. Transaction format
-
-```
-Transaction{chain_id, sender, recipient, amount:int, nonce:int, timestamp}
-signed bytes = canonical JSON (sorted keys, no spaces, UTF-8)
-signature    = ML-DSA-65 over those bytes
+```text
+Alice wallet                  Secure channel                   Validator node              Ledger
+creates tx +    -->  ML-KEM-768 -> HKDF -> AES-256-GCM  -->  decrypt, verify,       -->  hash-linked blocks,
+ML-DSA signature                                             nonce/balance checks,       balances, nonces,
+                                                             signature validation        rejection log
 ```
 
-`chain_id` blocks cross-chain replay, and the per-sender `nonce` blocks same-chain replay.
+The implementation is split into the following modules:
 
-Validator checks run in this order: chain_id, sender registered, signature, nonce, amount > 0, sufficient balance. Each rejection has a reason code (`BAD_SIGNATURE`, `REPLAY`, `INSUFFICIENT_BALANCE`, ...).
+| Module | Purpose |
+|---|---|
+| `task5_application/main.py` | CLI entry point that runs the normal and attack demos |
+| `task5_application/pqc_blockchain/wallet.py` | Wallet creation, address derivation, signed transactions |
+| `task5_application/pqc_blockchain/registry.py` | Trusted wallet registry and pinned validator KEM key |
+| `task5_application/pqc_blockchain/transaction.py` | Canonical transaction encoding and signing helpers |
+| `task5_application/pqc_blockchain/secure_channel.py` | ML-KEM + HKDF + AES-GCM submission envelope |
+| `task5_application/pqc_blockchain/validator.py` | Acceptance checks: signature, nonce, balance, and sender validity |
+| `task5_application/pqc_blockchain/ledger.py` | Genesis block, transaction blocks, hash-chain validation |
+| `task5_application/pqc_blockchain/node.py` | Decrypts a submission and passes it to the validator |
+| `task5_application/evaluation.py` | Timing, size, and throughput measurements |
 
-## 4. Folder structure
+## 3. Transaction model
 
-```
-common/pqc.py             ML-DSA, ML-KEM, HKDF, AES-GCM wrappers (shared by Tasks 2-5)
-common/timing.py          timing helpers
-common/results.py         save CSV/JSON results
-task5_application/
-  config.py               CHAIN_ID, algorithm names
-  wallet.py               user keys (private keys go in gitignored keys/)
-  registry.py             permissioned public-key registry
-  transaction.py          tx format, canonical bytes, sign/verify
-  secure_channel.py       ML-KEM -> HKDF -> AES-GCM envelope
-  validator.py            acceptance rules
-  ledger.py               Block, Chain, validate_chain()
-  node.py                 decrypt -> validate -> append
-  attacks.py              attack simulations
-  evaluation.py           timings, sizes, graphs
-  main.py                 CLI demo
-tests/task5/              pytest tests
-results/{data,figures,screenshots}/task5/
+Transactions are encoded using canonical JSON bytes and signed over those bytes:
+
+```text
+Transaction { sender, recipient, amount, nonce, timestamp }
+canonical bytes = sorted keys, compact JSON, UTF-8
+signature = ML-DSA-65 over signing bytes
 ```
 
-## 5. Attack experiments
+The sender nonce prevents same-chain replay, and each block stores the hash of the previous block so the chain can detect mutation.
 
-| # | Attack | Expected result | Required |
+## 4. Attack experiments covered
+
+| # | Attack | Security mechanism | Expected detection |
 |---|---|---|---|
-| 1 | Change amount/recipient after signing | Signature fails, no balance change | Yes |
-| 2 | Mallory signs as Alice | Verification against Alice's key fails | Yes |
-| 3 | Replay an accepted transaction | Rejected: nonce already used | Yes |
-| 4 | Capture or modify ciphertext | Unreadable; AES-GCM authentication fails | If time |
-| 4b | Swap the node's ML-KEM public key | Client rejects: key signature invalid | If time |
-| 5 | Edit an old block | `validate_chain()` reports the bad block | If time |
+| 1 | Replay an accepted transaction | Per-sender nonce + validator nonce check | the second submission is rejected because the expected nonce has already been used |
+| 2 | Tamper with ciphertext | AES-256-GCM authentication tag and AAD binding | decryption fails with an integrity error because the tag no longer matches |
+| 3 | Swap the validator KEM public key | trusted public-key fingerprint check before ML-KEM encapsulation | `encrypt_submission()` rejects the mismatched validator key before the encrypted payload is created |
+| 4 | Modify a historical block | SHA-256 hash chaining in `Ledger.validate_chain()` | the chain no longer hashes correctly and `validate_chain()` returns `False` |
+| 5 | Change the amount or recipient after signing | ML-DSA-65 signature verification over canonical bytes | transaction verification fails because the signed payload no longer matches |
+| 6 | Attempt to impersonate another wallet | ML-DSA verification against the registered sender public key | the attacker-supplied signature does not verify for the registered identity, so the transaction is rejected |
 
-## 6. Running
+## 5. Running the demo
+
+Run everything from the repository root:
 
 ```bash
-uv sync
-uv run python -m task5_application.main     # demo (once #14 is done)
-uv run pytest tests/task5                   # tests
+uv run python -m task5_application.main --mode normal
+uv run python -m task5_application.main --mode attacks
+uv run python -m task5_application.evaluation
 ```
 
-## 7. Work plan
+To validate the logic with the included tests:
 
-Tracked in issue #5 with sub-issues #6-#14. Order: #6, #7, #8 in parallel, then #9, then #10 and #11, then #12, #13, #14. Use one branch per issue (for example `t5-1-pqc-wrappers`) and open a PR for the other person to review.
+```bash
+uv run pytest tests/task5_test.py -v
+```
+
+## 6. Notes
+
+- Wallet addresses are derived from the SHA-256 hash of the ML-DSA public key.
+- The registry trusts the validator KEM public key fingerprint before a sender encrypts a fresh KEM ciphertext.
+- The prototype is designed for coursework demonstration and is not intended as a production-grade blockchain implementation.
