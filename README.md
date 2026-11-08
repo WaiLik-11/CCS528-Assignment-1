@@ -19,7 +19,7 @@
 | PROTECT | 2 | ML-KEM (FIPS 203) key establishment and an AES-GCM session | [task2_mlkem/](task2_mlkem/) |
 | PROTECT | 3 | ML-DSA (FIPS 204) signatures with tampering experiments | [task3_mldsa/](task3_mldsa/) |
 | COMPARE | 4 | Classical (RSA/ECDH/ECDSA) vs PQC benchmarks | [task4_benchmark/](task4_benchmark/) |
-| APPLY | 5 | Quantum-safe prototype for an emerging environment | [task5_application/](task5_application/) |
+| APPLY | 5 | Quantum-safe permissioned blockchain PoC using ML-DSA, ML-KEM, HKDF, AES-GCM, and a hash-linked ledger | [task5_application/](task5_application/) |
 
 ## 2. Required Software
 
@@ -78,15 +78,17 @@ To add a dependency, run `uv add <package>` and commit both `pyproject.toml` and
 Run all commands from the repository root.
 
 ```bash
-uv run python -m task1_shor.main            # BREAK:   Shor's algorithm for N = 15
-uv run python -m task2_mlkem.main           # PROTECT: ML-KEM and an AES-GCM session
-uv run python -m task3_mldsa.main           # PROTECT: ML-DSA, Experiments A and B
-uv run python -m task4_benchmark.main       # COMPARE: writes CSVs and graphs to results/
-uv run python -m task5_application.main     # APPLY:   quantum-safe prototype demo
-uv run pytest                               # run tests
+uv run python -m task1_shor.main                           # BREAK:   Shor's algorithm for N = 15
+uv run python -m task2_mlkem.main                          # PROTECT: ML-KEM and an AES-GCM session
+uv run python -m task3_mldsa.main                          # PROTECT: ML-DSA, Experiments A and B
+uv run python -m task4_benchmark.main                      # COMPARE: writes CSVs and graphs to results/
+uv run python -m task5_application.main --mode normal      # APPLY: quantum-safe blockchain demo
+uv run python -m task5_application.main --mode attacks     # APPLY: replay / tamper / ledger attack scenarios
+uv run python -m task5_application.evaluation              # APPLY: timing, size, and throughput measurements
+uv run pytest                                              # run tests
 ```
 
-Outputs (CSV files, figures and circuit diagrams) are written to [results/](results/).
+Outputs (CSV files, figures, circuit diagrams, and JSON measurements) are written to [results/](results/).
 
 ## 6. Program Structure
 
@@ -155,12 +157,38 @@ assignment-1/
 - [ ] Tables and graphs in `results/`
 - [ ] Critical analysis of the security, performance and resource trade-offs, comparing security levels like for like (e.g. ML-KEM-768 vs P-384 vs RSA-3072)
 
-### Task 5: Quantum-Safe Prototype (20%)
-- [ ] Chosen environment, plus the security problem and threat model (attacker capabilities, assets)
-- [ ] Architecture diagram
-- [ ] Normal operation: ML-DSA authentication → ML-KEM key exchange → AES-GCM data
-- [ ] At least one attack or failure scenario (e.g. impersonation, MITM key substitution, replay, tampered ciphertext) and how it is detected
-- [ ] Explanation of the security purpose of each component
+### Task 5: Quantum-Safe Permissioned Blockchain PoC (20%)
+- [ ] Chosen environment, plus the security problem and threat model (attacker capabilities, assets, out-of-scope assumptions)
+- [ ] Architecture diagram showing wallet signing, secure transport, validator checks, and hash-linked ledger
+- [ ] Normal operation: ML-DSA authentication → ML-KEM key establishment → HKDF → AES-GCM payload encryption → ledger append
+- [ ] At least one attack or failure scenario (e.g. replay, ciphertext tampering, KEM key substitution, ledger mutation) and how it is detected
+- [ ] Explanation of the security purpose of each component and the trusted registry assumptions
+- [ ] Demonstration of the local prototype's evaluation metrics: timings, sizes, throughput, and chain validation results
+
+#### Task 5 prototype
+
+Run the prototype from the repository root:
+
+```bash
+uv run python -m task5_application.main --mode normal
+uv run python -m task5_application.main --mode attacks
+uv run python -m task5_application.evaluation
+```
+
+This application is a local permissioned-ledger prototype. Wallets derive addresses from their ML-DSA public keys, a trusted registry keeps the authorized participant set and pinned validator ML-KEM public key, and each signed transfer is submitted through a secure ML-KEM-768 + HKDF-SHA-256 + AES-256-GCM channel before being appended to a SHA-256 hash-linked ledger. The actual implementation lives in `task5_application/main.py` and the modules under `task5_application/pqc_blockchain/`.
+
+```text
+Alice wallet            Secure channel               Validator node                Ledger
+creates tx +    -->  ML-KEM-768 -> HKDF ->   -->  decrypt, verify,        -->  hash-linked blocks,
+ML-DSA signature     AES-256-GCM                  nonce/balance checks,      balances, nonces,
+                                                  signature validation      rejection log
+```
+
+The validator accepts only registered participants, positive transfers, valid ML-DSA signatures, the expected next sender nonce, and enough balance. The sender checks that the validator KEM fingerprint matches the trusted registry value before encapsulating a fresh KEM shared secret, and the encrypted payload is bound to the KEM ciphertext hash and transaction metadata using AES-GCM AAD. Accepted transfers become hash-linked blocks.
+
+The threat model assumes an untrusted network attacker can read, alter, forge, or replay submitted transactions, and that a ledger reader should not learn the plaintext payment note. The attack experiments cover replayed transactions, ciphertext modification, KEM key substitution, and mutation of stored blocks. Signatures, nonce checks, AES-GCM tags, and chain validation detect those failures. The prototype is intentionally limited: it does not implement distributed consensus, network transport, persistent custody, or production key management. The registry and validator KEM fingerprint are trusted in this simulation, and the ledger is local and permissioned rather than a production blockchain.
+
+The evaluation script reports median ML-KEM/ML-DSA timings, payload size and ledger growth, end-to-end transaction latency, throughput, and full-chain validation times for configurable sample counts. These outputs support the coursework demo rather than production benchmarking.
 
 ## 9. References
 
