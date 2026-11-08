@@ -1,7 +1,7 @@
 """Cryptography primitives for PQC demo.
 
 Algorithms:
-- ML-KEM-512/768/1024: NIST FIPS 203 (caller chooses the parameter set)
+- ML-KEM-512/768/1024: NIST FIPS 203
 - ML-DSA-65: NIST FIPS 204
 - HKDF-SHA-256: NIST SP 800-56C Rev. 2
 - AES-256-GCM: NIST SP 800-38D
