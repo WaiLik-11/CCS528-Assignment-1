@@ -1,0 +1,62 @@
+{
+  "environment": {
+    "liboqs": "0.16.0",
+    "liboqs_python": "0.16.0.1",
+    "python": "3.12.4",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64"
+  },
+  "results": [
+    {
+      "parameter_set": "ML-KEM-512",
+      "nist_level": 1,
+      "runs": 1000,
+      "keygen_mean_ms": 0.0121,
+      "keygen_std_ms": 0.000405,
+      "keygen_median_ms": 0.012,
+      "encaps_mean_ms": 0.013642,
+      "encaps_std_ms": 0.000329,
+      "encaps_median_ms": 0.013612,
+      "decaps_mean_ms": 0.010313,
+      "decaps_std_ms": 0.000514,
+      "decaps_median_ms": 0.010261,
+      "public_key_bytes": 800,
+      "private_key_bytes": 1632,
+      "ciphertext_bytes": 768
+    },
+    {
+      "parameter_set": "ML-KEM-768",
+      "nist_level": 3,
+      "runs": 1000,
+      "keygen_mean_ms": 0.015996,
+      "keygen_std_ms": 0.000468,
+      "keygen_median_ms": 0.015884,
+      "encaps_mean_ms": 0.017355,
+      "encaps_std_ms": 0.00035,
+      "encaps_median_ms": 0.017303,
+      "decaps_mean_ms": 0.015255,
+      "decaps_std_ms": 0.000949,
+      "decaps_median_ms": 0.015111,
+      "public_key_bytes": 1184,
+      "private_key_bytes": 2400,
+      "ciphertext_bytes": 1088
+    },
+    {
+      "parameter_set": "ML-KEM-1024",
+      "nist_level": 5,
+      "runs": 1000,
+      "keygen_mean_ms": 0.019923,
+      "keygen_std_ms": 0.000624,
+      "keygen_median_ms": 0.019756,
+      "encaps_mean_ms": 0.02155,
+      "encaps_std_ms": 0.000534,
+      "encaps_median_ms": 0.021482,
+      "decaps_mean_ms": 0.020418,
+      "decaps_std_ms": 0.000443,
+      "decaps_median_ms": 0.020347,
+      "public_key_bytes": 1568,
+      "private_key_bytes": 3168,
+      "ciphertext_bytes": 1568
+    }
+  ]
+}

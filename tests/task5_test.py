@@ -1,7 +1,7 @@
 import unittest
 from cryptography.exceptions import InvalidTag
 from task5_application.main import build_demo
-from task5_application.pqc_blockchain.secure_channel import encrypt_submission
+from task5_application.pqc_blockchain.secure_channel import KEM_NAME, encrypt_submission
 from task5_application.pqc_blockchain.wallet import wallet_address
 from common.pqc import PQCKEMRecipient
 
@@ -92,7 +92,7 @@ class PQCBlockchainTests(unittest.TestCase):
 
     def test_validator_kem_key_substitution_rejected(self):
         alice, bob, registry, ledger, validator, node, kem = build_demo()
-        attacker_kem = PQCKEMRecipient()
+        attacker_kem = PQCKEMRecipient(KEM_NAME)
         tx = alice.create_transaction(bob.address, 10, 0)
         with self.assertRaises(ValueError):
             encrypt_submission(attacker_kem.public_key, tx.to_bytes(), registry.validator_kem_fingerprint())
