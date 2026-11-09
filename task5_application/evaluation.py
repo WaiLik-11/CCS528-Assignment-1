@@ -14,6 +14,7 @@ from common.pqc import (
 from .pqc_blockchain.ledger import Ledger
 from .pqc_blockchain.secure_channel import KEM_NAME, encrypt_submission
 from .pqc_blockchain.transaction import canonical_json
+from .pqc_blockchain.wallet import SIG_NAME
 from .main import build_demo
 
 def median_ms(fn: Callable[[], object], repeats: int = 10) -> float:
@@ -65,19 +66,19 @@ def measure_transaction_workload(transaction_count: int, validation_repeats: int
 def run(repeats: int = 10, transactions: int = 50):
     message = b"evaluation transaction payload"
 
-    signer = PQCSigner()
+    signer = PQCSigner(SIG_NAME)
     recipient = PQCKEMRecipient(KEM_NAME)
     signature = signer.sign(message)
     kem_ct, shared_secret = kem_encapsulate(recipient.public_key, KEM_NAME)
     key = derive_aes_key(shared_secret, kem_ct, b"eval")
     _, ciphertext = aes_gcm_encrypt(key, message)
 
-    print("ML-DSA-65 signature bytes:", len(signature))
+    print(f"{SIG_NAME} signature bytes:", len(signature))
     print(f"{KEM_NAME} ciphertext bytes:", len(kem_ct))
     print("AES-GCM ciphertext+tag bytes:", len(ciphertext))
-    print("ML-DSA-65 key generation median ms:", f"{median_ms(PQCSigner, repeats):.3f}")
-    print("ML-DSA-65 signing median ms:", f"{median_ms(lambda: signer.sign(message), repeats):.3f}")
-    print("ML-DSA-65 verification median ms:", f"{median_ms(lambda: PQCSigner.verify(signer.public_key, message, signature), repeats):.3f}")
+    print(f"{SIG_NAME} key generation median ms:", f"{median_ms(lambda: PQCSigner(SIG_NAME), repeats):.3f}")
+    print(f"{SIG_NAME} signing median ms:", f"{median_ms(lambda: signer.sign(message), repeats):.3f}")
+    print(f"{SIG_NAME} verification median ms:", f"{median_ms(lambda: PQCSigner.verify(signer.public_key, message, signature, SIG_NAME), repeats):.3f}")
     print(f"{KEM_NAME} key generation median ms:", f"{median_ms(lambda: PQCKEMRecipient(KEM_NAME), repeats):.3f}")
     print(f"{KEM_NAME} encapsulation median ms:", f"{median_ms(lambda: kem_encapsulate(recipient.public_key, KEM_NAME), repeats):.3f}")
     print(f"{KEM_NAME} decapsulation median ms:", f"{median_ms(lambda: recipient.decapsulate(kem_ct), repeats):.3f}")

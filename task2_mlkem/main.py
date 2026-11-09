@@ -13,11 +13,11 @@ key and ciphertext sizes for ML-KEM-512, ML-KEM-768 and ML-KEM-1024.
 """
 import argparse
 import hmac
-import platform
-
 import oqs
 from cryptography.exceptions import InvalidTag
 
+from common.display import boolean_colour, flip_bit, format_colour, preview, section
+from common.plotting import plot_time_and_size
 from common.pqc import (
     KEM_PARAMETER_SETS,
     PQCKEMRecipient,
@@ -25,9 +25,10 @@ from common.pqc import (
     aes_gcm_encrypt,
     derive_aes_key,
     kem_encapsulate,
+    nist_level,
     sha256,
 )
-from common.results import DATA_DIR, FIGURES_DIR, save_json
+from common.results import DATA_DIR, FIGURES_DIR, environment, save_json
 from common.timing import sample_ms, summarize
 
 SESSION_CONTEXT = b"Task2-MLKEM-session"
@@ -36,37 +37,11 @@ ALICE_TO_BOB = SESSION_CONTEXT + b"|alice->bob"
 
 OPERATIONS = ("keygen", "encaps", "decaps")
 
-def section(title: str) -> None:
-    print("\n" + "=" * 78 + f"\n{title}\n" + "=" * 78)
-
-def preview(data: bytes, n: int = 16) -> str:
-    return f"{data[:n].hex()}... ({len(data)} bytes)"
-
-def flip_bit(data: bytes, index: int = 0) -> bytes:
-    return data[:index] + bytes([data[index] ^ 0x01]) + data[index + 1:]
-
-def nist_level(kem_name: str) -> int:
-    with oqs.KeyEncapsulation(kem_name) as kem:
-        return kem.details["claimed_nist_level"]
-
-def format_colour(message: str, colour: str = "grey") -> str:
-    colour_codes = {
-        "grey": "\033[90m",
-        "red": "\033[91m",
-        "green": "\033[92m",
-        "yellow": "\033[93m",
-    }
-    
-    return f"{colour_codes.get(colour, '')}{message}\033[0m"
-
-def boolean_colour(value: bool) -> str:
-    return format_colour(str(value), "green" if value else "red")
-
 # --------------------------------------------------------------------------
 # Part 1: KeyGen -> Encaps -> (ciphertext + shared secret) -> Decaps
 # --------------------------------------------------------------------------
-def key_establishment(kem_name: str):
-    section(f"PART 1: ML-KEM key establishment ({kem_name}, NIST category {nist_level(kem_name)})")
+def key_establishment(kem_name: str) -> tuple[PQCKEMRecipient, bytes, bytes, bytes]:
+    section(f"PART 1: ML-KEM key establishment ({kem_name}, NIST level {nist_level(kem_name)})")
 
     print("\n[Step 1] Key Generation (Alice)")
     alice = PQCKEMRecipient(kem_name)
@@ -160,7 +135,7 @@ def secure_session(ciphertext: bytes, alice_secret: bytes, bob_secret: bytes, re
     for name, (key, data, associated) in attempts.items():
         try:
             aes_gcm_decrypt(key, req_nonce, data, associated)
-            print(f"  {name}: ERROR, accepted")
+            print(format_colour(f"  {name}: ERROR, accepted", "red"))
         except InvalidTag:
             print(f"  {name}: {format_colour('rejected (InvalidTag)', 'red')}")
 
@@ -202,69 +177,16 @@ def benchmark(runs: int) -> list[dict]:
     for r in rows:
         print(f"{r['parameter_set']:<13} {r['public_key_bytes']:>6} {r['private_key_bytes']:>6} {r['ciphertext_bytes']:>6}")
 
-    out_dir = DATA_DIR / "task2"
-    json_path = save_json({
-        "environment": {
-            "liboqs": oqs.oqs_version(),
-            "liboqs_python": oqs.oqs_python_version(),
-            "python": platform.python_version(),
-            "platform": platform.platform(),
-            "processor": platform.processor() or platform.machine(),
-        },
-        "results": rows,
-    }, out_dir / "mlkem_benchmark.json")
+    json_path = save_json({"environment": environment(), "results": rows}, DATA_DIR / "task2" / "mlkem_benchmark.json")
     print(f"\nSaved {json_path.relative_to(DATA_DIR.parent.parent)}")
-    fig_path = plot(rows)
+    fig_path = plot_time_and_size(
+        rows, OPERATIONS, ("KeyGen", "Encaps", "Decaps"),
+        ("public_key_bytes", "private_key_bytes", "ciphertext_bytes"), ("Public key", "Private key", "Ciphertext"),
+        f"ML-KEM (FIPS 203) via liboqs {oqs.oqs_version()}, {rows[0]['runs']} runs",
+        FIGURES_DIR / "task2" / "mlkem_benchmark.png",
+    )
     print(f"Saved {fig_path.relative_to(DATA_DIR.parent.parent)}")
     return rows
-
-
-def plot(rows: list[dict]):
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    colors = ("#2a78d6", "#eb6834", "#1baf7a")
-    names = [r["parameter_set"] for r in rows]
-    x = np.arange(len(names))
-    width = 0.26
-
-    fig, (ax_t, ax_s) = plt.subplots(1, 2, figsize=(12, 4.6))
-    panels = (
-        (ax_t, OPERATIONS, ("KeyGen", "Encaps", "Decaps"),
-         lambda r, op: r[f"{op}_mean_ms"] * 1000, lambda r, op: r[f"{op}_std_ms"] * 1000,
-         "Mean time (µs), error bar = 1 std dev", "Operation time"),
-        (ax_s, ("public_key_bytes", "private_key_bytes", "ciphertext_bytes"),
-         ("Public key", "Private key", "Ciphertext"),
-         lambda r, k: r[k], None, "Size (bytes)", "Key and ciphertext size"),
-    )
-    for ax, keys, labels, value, err, ylabel, title in panels:
-        for i, (key, label) in enumerate(zip(keys, labels)):
-            vals = [value(r, key) for r in rows]
-            errs = [err(r, key) for r in rows] if err else None
-            bars = ax.bar(x + (i - 1) * width, vals, width - 0.02, yerr=errs, label=label,
-                          color=colors[i], edgecolor="white", linewidth=2,
-                          error_kw={"ecolor": "#52514e", "elinewidth": 1, "capsize": 3})
-            if err is None:
-                ax.bar_label(bars, fmt="%d", fontsize=8, color="#52514e", padding=2)
-        ax.set_xticks(x, names)
-        ax.set_ylabel(ylabel, color="#52514e")
-        ax.set_title(title, loc="left", fontsize=12, color="#0b0b0b")
-        ax.legend(frameon=False)
-        ax.grid(axis="y", color="#e4e3df", linewidth=0.8)
-        ax.set_axisbelow(True)
-        for spine in ("top", "right"):
-            ax.spines[spine].set_visible(False)
-        ax.tick_params(colors="#52514e")
-
-    fig.suptitle(f"ML-KEM (FIPS 203) via liboqs {oqs.oqs_version()}, {rows[0]['runs']} runs", x=0.01, ha="left", fontsize=13)
-    fig.tight_layout()
-    path = FIGURES_DIR / "task2" / "mlkem_benchmark.png"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, dpi=200)
-    plt.close(fig)
-    return path
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

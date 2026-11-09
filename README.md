@@ -80,7 +80,7 @@ Run all commands from the repository root.
 ```bash
 uv run python -m task1_shor.main                           # BREAK:   Shor's algorithm for N = 15
 uv run python -m task2_mlkem.main                          # PROTECT: ML-KEM and an AES-GCM session
-uv run python -m task3_mldsa.main                          # PROTECT: ML-DSA, Experiments A and B
+uv run python -m task3_mldsa.main                          # PROTECT: ML-DSA, Experiments A and B (--benchmark for all parameter sets)
 uv run python -m task4_benchmark.main                      # COMPARE: writes CSVs and graphs to results/
 uv run python -m task5_application.main --mode normal      # APPLY: quantum-safe blockchain demo
 uv run python -m task5_application.main --mode attacks     # APPLY: replay / tamper / ledger attack scenarios
@@ -99,7 +99,7 @@ assignment-1/
 ├── uv.lock                 # Exact pinned versions, shared by the team
 ├── .python-version         # Python 3.12
 ├── .gitignore
-├── common/                 # Shared helpers (timing, formatting, result saving)
+├── common/                 # Shared helpers (PQC wrappers, timing, console output, plots, result saving)
 ├── task1_shor/             # Task 1: BREAK, Shor's algorithm
 ├── task2_mlkem/            # Task 2: PROTECT, ML-KEM (FIPS 203)
 ├── task3_mldsa/            # Task 3: PROTECT, ML-DSA (FIPS 204)
@@ -145,12 +145,14 @@ assignment-1/
 Details, results and explanation: [task2_mlkem/README.md](task2_mlkem/README.md).
 
 ### Task 3: ML-DSA and Tampering (20%)
-- [ ] KeyGen → Sign → Signature → Verify
-- [ ] **Experiment A**: original message verifies
-- [ ] **Experiment B**: tampered message fails verification
-- [ ] Extra tampering tests: flipped signature bit, wrong public key, truncated signature, single-bit message change
-- [ ] Metrics for ML-DSA-44, 65 and 87: keygen, sign and verify times, plus pk, sk and signature sizes
-- [ ] Explanation of what integrity, authenticity and non-repudiation mean here
+- [x] KeyGen → Sign → Signature → Verify
+- [x] **Experiment A**: original message verifies
+- [x] **Experiment B**: tampered message fails verification
+- [x] Extra tampering tests: flipped signature bit, wrong public key, truncated signature, single-bit message change, transplanted signature, context-string mismatch
+- [x] Metrics for ML-DSA-44, 65 and 87: keygen, sign and verify times, plus pk, sk and signature sizes
+- [x] Explanation of what integrity, authenticity and non-repudiation mean here
+
+Details, results and explanation: [task3_mldsa/README.md](task3_mldsa/README.md).
 
 ### Task 4: Benchmarking (20%)
 - [ ] KEM comparison: RSA-OAEP / ECDH (X25519, P-256) vs ML-KEM

@@ -2,6 +2,8 @@
 import csv
 import json
 from pathlib import Path
+import platform
+import oqs
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 DATA_DIR = RESULTS_DIR / "data"
@@ -16,6 +18,17 @@ def save_csv(rows: list[dict], path: Path) -> Path:
         writer.writeheader()
         writer.writerows(rows)
     return path
+
+def environment() -> dict[str, str]:
+    """Library and machine details stored next to every measurement."""
+    
+    return {
+        "liboqs": oqs.oqs_version(),
+        "liboqs_python": oqs.oqs_python_version(),
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "processor": platform.processor() or platform.machine(),
+    }
 
 def save_json(data, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
