@@ -2,7 +2,7 @@
 
 Algorithms:
 - ML-KEM-512/768/1024: NIST FIPS 203
-- ML-DSA-65: NIST FIPS 204
+- ML-DSA-44/65/87: NIST FIPS 204
 - HKDF-SHA-256: NIST SP 800-56C Rev. 2
 - AES-256-GCM: NIST SP 800-38D
 """
@@ -12,24 +12,41 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-SIG_NAME = "ML-DSA-65"
-KEM_PARAMETER_SETS = ("ML-KEM-512", "ML-KEM-768", "ML-KEM-1024")
+SIG_NIST_LEVELS = {"ML-DSA-44": 2, "ML-DSA-65": 3, "ML-DSA-87": 5}
+KEM_NIST_LEVELS = {"ML-KEM-512": 1, "ML-KEM-768": 3, "ML-KEM-1024": 5}
+SIG_PARAMETER_SETS = tuple(SIG_NIST_LEVELS)
+KEM_PARAMETER_SETS = tuple(KEM_NIST_LEVELS)
 
 def sha256(data: bytes) -> bytes:
     return hashlib.sha256(data).digest()
 
+def nist_level(mechanism: str) -> int:
+    """Claimed NIST security level of an ML-KEM or ML-DSA parameter set."""
+    return {**SIG_NIST_LEVELS, **KEM_NIST_LEVELS}[mechanism]
+
 class PQCSigner:
     """ML-DSA signing context. Private key remains inside liboqs context."""
-    def __init__(self):
-        self._ctx = oqs.Signature(SIG_NAME)
+    def __init__(self, sig_name: str):
+        self.sig_name = sig_name
+        self._ctx = oqs.Signature(sig_name)
         self.public_key = self._ctx.generate_keypair()
 
-    def sign(self, message: bytes) -> bytes:
+    def sign(self, message: bytes, context: bytes = b"") -> bytes:
+        if context:
+            return self._ctx.sign_with_ctx_str(message, context)
         return self._ctx.sign(message)
 
+    @property
+    def private_key_size(self) -> int:
+        """Size of the signing key in bytes."""
+        return len(self._ctx.export_secret_key())
+
     @staticmethod
-    def verify(public_key: bytes, message: bytes, signature: bytes) -> bool:
-        with oqs.Signature(SIG_NAME) as verifier:
+    def verify(public_key: bytes, message: bytes, signature: bytes, sig_name: str, context: bytes = b"") -> bool:
+        """True only for a valid signature; malformed keys or signatures return False."""
+        with oqs.Signature(sig_name) as verifier:
+            if context:
+                return verifier.verify_with_ctx_str(message, signature, context, public_key)
             return verifier.verify(message, signature, public_key)
 
 

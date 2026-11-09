@@ -4,11 +4,12 @@ from common.pqc import (
     KEM_PARAMETER_SETS, PQCKEMRecipient, kem_encapsulate,
     derive_aes_key, aes_gcm_encrypt, aes_gcm_decrypt,
 )
-from task2_mlkem.main import SESSION_CONTEXT, flip_bit, measure
+from common.display import flip_bit
+from task2_mlkem.main import SESSION_CONTEXT, measure
 
 KEM = "ML-KEM-768"  # parameter set for the single-set tests
 
-# FIPS 203 encapsulation key, decapsulation key, ciphertext sizes in bytes.
+# FIPS 203 Table 3: encapsulation key, decapsulation key, ciphertext sizes in bytes.
 FIPS203_SIZES = {
     "ML-KEM-512": (800, 1632, 768),
     "ML-KEM-768": (1184, 2400, 1088),

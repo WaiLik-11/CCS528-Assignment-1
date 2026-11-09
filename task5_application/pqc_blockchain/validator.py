@@ -1,6 +1,6 @@
 """Transaction validation: signature, address, nonce, balance and fields."""
 from common.pqc import PQCSigner
-from .wallet import wallet_address
+from .wallet import SIG_NAME, wallet_address
 
 class Validator:
     def __init__(self, registry, ledger):
@@ -33,7 +33,7 @@ class Validator:
         if wallet_address(public_key) != tx.sender:
             return False, "Wallet address/public-key mismatch"
 
-        if not PQCSigner.verify(public_key, tx.signing_bytes(), tx.signature):
+        if not PQCSigner.verify(public_key, tx.signing_bytes(), tx.signature, SIG_NAME):
             return False, "ML-DSA signature verification failed"
 
         expected_nonce = self.next_nonce.get(tx.sender, 0)
