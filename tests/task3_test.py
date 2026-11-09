@@ -78,6 +78,9 @@ class MLDSATests(unittest.TestCase):
         self.assertFalse(PQCSigner.verify(alice.public_key, ORIGINAL_MESSAGE, signature, SIG, b"other"))
 
     def test_message_representative_matches_liboqs(self):
+        if not oqs.get_enabled_sig_mechanisms().__contains__(SIG + "-extmu"):
+            self.skipTest(f"{SIG}-extmu not available in this liboqs build")
+
         # Signing our own mu with the external-mu variant must give a signature that plain ML-DSA accepts.
         signer = oqs.Signature(SIG)
         public_key = signer.generate_keypair()
