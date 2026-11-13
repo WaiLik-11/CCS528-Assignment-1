@@ -79,6 +79,8 @@ Run all commands from the repository root.
 
 ```bash
 uv run python -m task1_shor.main                           # BREAK:   Shor's algorithm for N = 15
+uv run python -m task1_shor.main --a 14                    # BREAK:   a failing choice of a (14 = -1 mod 15)
+uv run python -m task1_shor.main --experiments            # BREAK:   metrics for every valid a, saved to results/
 uv run python -m task2_mlkem.main                          # PROTECT: ML-KEM and an AES-GCM session
 uv run python -m task3_mldsa.main                          # PROTECT: ML-DSA, Experiments A and B (--benchmark for all parameter sets)
 uv run python -m task4_benchmark.main                      # COMPARE: writes CSVs and graphs to results/
@@ -128,12 +130,14 @@ assignment-1/
 > Every task therefore needs original code, its own experiments, and a written explanation.
 
 ### Task 1: Shor's Algorithm (20%)
-- [ ] Program prints every stage: Input N → choose a → GCD check → quantum period finding → inverse QFT → measurement → period estimation (continued fractions) → classical factor extraction → factors
-- [ ] Circuit diagram saved to `results/figures/`
-- [ ] Measurement histogram, with each peak explained (e.g. which values of s/r it represents)
-- [ ] Metrics: qubit count, circuit depth, gate counts, number of shots, execution time, success rate across several values of `a` and repeated runs
-- [ ] Explanation of how this breaks RSA (factoring N gives φ(N), which gives the private key d), with a toy RSA key recovered as proof
-- [ ] **Limitations**: hard-coded modular multiplication, simulator vs real hardware, noise, and qubit estimates for RSA-2048
+- [x] Program prints every stage: Input N → choose a → GCD check → quantum period finding → inverse QFT → measurement → period estimation (continued fractions) → classical factor extraction → factors
+- [x] Circuit diagram saved to `results/figures/`
+- [x] Measurement histogram, with each peak explained (e.g. which values of s/r it represents)
+- [x] Metrics: qubit count, circuit depth, gate counts, number of shots, execution time, success rate across several values of `a` and repeated runs
+- [x] Explanation of how this breaks RSA (factoring N gives φ(N), which gives the private key d), with a toy RSA key recovered as proof
+- [x] **Limitations**: hard-coded modular multiplication, simulator vs real hardware, noise, and qubit estimates for RSA-2048
+
+Details, results and explanation: [task1_shor/README.md](task1_shor/README.md).
 
 ### Task 2: ML-KEM (20%)
 - [x] KeyGen → Encaps → (ciphertext, shared secret) → Decaps → recovered secret, run as two separate parties (Alice and Bob)
