@@ -12,6 +12,7 @@ class Registry:
         self._identities = {}
         self._validator_kem_public_key = None
         self._validator_kem_fingerprint = None
+        self._validator_signing_key = None
 
     def register_wallet(self, public_key: bytes) -> str:
         """Register a wallet under SHA-256(public_key); return its address."""
@@ -39,3 +40,12 @@ class Registry:
         if self._validator_kem_fingerprint is None:
             raise ValueError("Validator KEM key is not registered")
         return self._validator_kem_fingerprint
+
+    def register_validator_signing_key(self, public_key):
+        """Pin the validator's ML-DSA public key, used to verify block signatures."""
+        self._validator_signing_key = bytes(public_key)
+
+    def validator_signing_key(self):
+        if self._validator_signing_key is None:
+            raise ValueError("Validator signing key is not registered")
+        return self._validator_signing_key
