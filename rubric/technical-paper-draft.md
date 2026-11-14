@@ -19,9 +19,15 @@ Building on these findings, we propose a quantum-safe permissioned ledger archit
 
 ## 1. Introduction
 
+**Cryptographic security.** Public-key cryptography lets two parties who have never met agree on a shared secret key (*key establishment*) and prove who created a message (*digital signatures*). Together, these provide confidentiality, integrity, authenticity and non-repudiation. They underpin TLS, PKI certificates, online banking, software updates and blockchains. Almost all deployed systems rely on RSA [2] or elliptic-curve cryptography (ECC) [3]. Their security rests on the assumption that certain mathematical problems, integer factorisation and discrete logarithms, cannot be solved in any practical amount of time.
+
+**Quantum computing.** A classical bit is either 0 or 1. A quantum bit (*qubit*) can exist in a *superposition* of both, so a register of *n* qubits is described by 2ⁿ complex amplitudes at once. Quantum gates transform these amplitudes, and quantum algorithms use *interference* so that the amplitudes of wrong answers cancel and those of correct answers reinforce each other. *Measurement* then returns one outcome, with probability given by its amplitude. This does not speed up every computation. It is, however, very effective for problems with hidden periodic structure, which is exactly the structure behind RSA and ECC.
+
+**The quantum threat.** Shor's algorithm [1] uses this to solve factoring and discrete logarithms in polynomial time, which breaks RSA, Diffie–Hellman and ECC completely. Grover's algorithm [14] only gives a quadratic speed-up for brute-force search, so symmetric ciphers such as AES-256 remain secure. In response, NIST has standardised lattice-based replacements: ML-KEM for key establishment (FIPS 203) [10] and ML-DSA for signatures (FIPS 204) [11].
+
 The research question for this paper is: *how does quantum computing challenge the security foundations of current public-key cryptography, and how can lattice-based PQC be practically integrated into emerging digital systems?*
 
-The paper follows the chain the rubric asks for: **theory → experimental evidence → security implications → design**.
+The paper moves from **theory → experimental evidence → security implications → design**.
 
 - Section 2 explains why RSA and ECC fail against Shor's algorithm. It uses our simulation to separate a toy demonstration from a real attack.
 - Section 3 explains why making RSA keys bigger does not help, and why lattice problems (LWE, Module-LWE) are the leading replacement.
