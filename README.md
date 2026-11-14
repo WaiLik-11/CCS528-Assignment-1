@@ -18,7 +18,7 @@
 | BREAK | 1 | Shor's algorithm factoring an RSA modulus (N = 15) | [task1_shor/](task1_shor/) |
 | PROTECT | 2 | ML-KEM (FIPS 203) key establishment and an AES-GCM session | [task2_mlkem/](task2_mlkem/) |
 | PROTECT | 3 | ML-DSA (FIPS 204) signatures with tampering experiments | [task3_mldsa/](task3_mldsa/) |
-| COMPARE | 4 | Classical (RSA/ECDH/ECDSA) vs PQC benchmarks | [task4_benchmark/](task4_benchmark/) |
+| COMPARE | 4 | Classical (RSA/ECDH/ECDSA) vs PQC benchmarks | [task4_benchmark/](task4_benchmark/README.md) |
 | APPLY | 5 | Quantum-safe permissioned blockchain PoC using ML-DSA, ML-KEM, HKDF, AES-GCM, and a hash-linked ledger | [task5_application/](task5_application/) |
 
 ## 2. Required Software
@@ -55,7 +55,6 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 | [cryptography](https://cryptography.io/) | Tasks 2, 4, 5 | AES-256-GCM, HKDF, and the classical RSA/ECDH/ECDSA baselines (OpenSSL backend) |
 | NumPy, pandas | Tasks 1, 4 | Numerical work and storing results |
 | matplotlib | Tasks 1, 4 | Circuit diagrams, histograms and benchmark graphs |
-| psutil | Task 4 | CPU and memory measurements |
 
 ## 4. Installation
 
@@ -159,11 +158,13 @@ Details, results and explanation: [task2_mlkem/README.md](task2_mlkem/README.md)
 Details, results and explanation: [task3_mldsa/README.md](task3_mldsa/README.md).
 
 ### Task 4: Benchmarking (20%)
-- [ ] KEM comparison: RSA-OAEP / ECDH (X25519, P-256) vs ML-KEM
-- [ ] Signature comparison: RSA-PSS / ECDSA / Ed25519 vs ML-DSA
-- [ ] At least 3 metrics (time, sizes, CPU/memory, communication overhead), repeated many times (e.g. 1000) with mean and standard deviation
-- [ ] Tables and graphs in `results/`
-- [ ] Critical analysis of the security, performance and resource trade-offs, comparing security levels like for like (e.g. ML-KEM-768 vs P-384 vs RSA-3072)
+- [x] KEM comparison: RSA-OAEP / ECDH (X25519, P-256) vs ML-KEM
+- [x] Signature comparison: RSA-PSS / ECDSA / Ed25519 vs ML-DSA
+- [x] 4 metrics (wall-clock time, CPU time, key/ciphertext/signature sizes, communication overhead), 200 runs with mean and standard deviation
+- [x] Tables and graphs in `results/`
+- [x] Critical analysis of the security, performance and resource trade-offs
+
+Details, results and explanation: [task4_benchmark/README.md](task4_benchmark/README.md).
 
 ### Task 5: Quantum-Safe Permissioned Blockchain PoC (20%)
 - [ ] Chosen environment, plus the security problem and threat model (attacker capabilities, assets, out-of-scope assumptions)
