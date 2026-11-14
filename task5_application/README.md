@@ -50,7 +50,7 @@ The implementation is split into the following modules:
 | `task5_application/pqc_blockchain/validator.py` | Acceptance checks: signature, nonce, balance, and sender validity |
 | `task5_application/pqc_blockchain/ledger.py` | Genesis block, transaction blocks, hash-chain validation |
 | `task5_application/pqc_blockchain/node.py` | Decrypts a submission and passes it to the validator |
-| `task5_application/evaluation.py` | Timing, size, and throughput measurements |
+| `task5_application/evaluation.py` | Per-stage timing, bytes per transaction against a classical estimate, throughput and validation scaling; writes JSON and a figure to `results/` |
 
 ## 3. Transaction model
 

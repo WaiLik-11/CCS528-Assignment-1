@@ -13,7 +13,7 @@ from .pqc_blockchain.validator import Validator
 from .pqc_blockchain.node import ValidatorNode
 from .pqc_blockchain.secure_channel import KEM_NAME, encrypt_submission
 
-def build_demo():
+def build_demo(alice_balance: int = 100):
     alice = Wallet("Alice")
     bob = Wallet("Bob")
     validator_kem = PQCKEMRecipient(KEM_NAME)
@@ -27,7 +27,7 @@ def build_demo():
     registry.register_validator_signing_key(validator_signer.public_key)
 
     ledger = Ledger(registry.validator_signing_key())
-    ledger.set_initial_balance(alice.address, 100)
+    ledger.set_initial_balance(alice.address, alice_balance)
     ledger.set_initial_balance(bob.address, 0)
     validator = Validator(registry, ledger, validator_signer)
     node = ValidatorNode(validator_kem, validator)

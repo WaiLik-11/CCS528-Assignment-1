@@ -1,0 +1,105 @@
+{
+  "environment": {
+    "liboqs": "0.16.0",
+    "liboqs_python": "0.16.0.1",
+    "python": "3.12.4",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64"
+  },
+  "runs": 1000,
+  "stages": [
+    {
+      "stage": "Wallet: build tx + ML-DSA sign",
+      "mean_ms": 0.105823,
+      "std_ms": 0.058527,
+      "median_ms": 0.08928,
+      "min_ms": 0.051366,
+      "max_ms": 0.482814
+    },
+    {
+      "stage": "Sender: pin check + ML-KEM encaps + HKDF + AES-GCM",
+      "mean_ms": 0.041719,
+      "std_ms": 0.000621,
+      "median_ms": 0.041593,
+      "min_ms": 0.040966,
+      "max_ms": 0.048934
+    },
+    {
+      "stage": "Validator: ML-KEM decaps + HKDF + AES-GCM decrypt",
+      "mean_ms": 0.022307,
+      "std_ms": 0.000419,
+      "median_ms": 0.022247,
+      "min_ms": 0.021808,
+      "max_ms": 0.027825
+    },
+    {
+      "stage": "Validator: checks incl. ML-DSA verify",
+      "mean_ms": 0.045033,
+      "std_ms": 0.00101,
+      "median_ms": 0.044806,
+      "min_ms": 0.044232,
+      "max_ms": 0.062749
+    },
+    {
+      "stage": "Ledger: block hash + ML-DSA block signature",
+      "mean_ms": 0.128224,
+      "std_ms": 0.061522,
+      "median_ms": 0.109965,
+      "min_ms": 0.0707,
+      "max_ms": 0.610718
+    },
+    {
+      "stage": "End to end (all of the above, real ledger)",
+      "mean_ms": 0.361667,
+      "std_ms": 0.088173,
+      "median_ms": 0.340807,
+      "min_ms": 0.248439,
+      "max_ms": 0.849715
+    }
+  ],
+  "sizes": {
+    "ML-DSA-65 + ML-KEM-768": {
+      "kem_ciphertext": 1088,
+      "wallet_signature": 6618,
+      "other_wire": 243,
+      "wire_total": 7949,
+      "ledger_wallet_signature": 6618,
+      "ledger_validator_signature": 6618,
+      "other_ledger": 455,
+      "ledger_total": 13691
+    },
+    "Ed25519 + X25519 (estimate)": {
+      "kem_ciphertext": 32,
+      "wallet_signature": 128,
+      "other_wire": 243,
+      "wire_total": 403,
+      "ledger_wallet_signature": 128,
+      "ledger_validator_signature": 128,
+      "other_ledger": 455,
+      "ledger_total": 711
+    }
+  },
+  "scaling": [
+    {
+      "blocks": 10,
+      "throughput_tps": 2595.9,
+      "ledger_bytes": 137142,
+      "validation_mean_ms": 0.601495,
+      "validation_std_ms": 0.004861
+    },
+    {
+      "blocks": 100,
+      "throughput_tps": 2745.2,
+      "ledger_bytes": 1369513,
+      "validation_mean_ms": 6.001703,
+      "validation_std_ms": 0.020787
+    },
+    {
+      "blocks": 1000,
+      "throughput_tps": 2796.5,
+      "ledger_bytes": 13695014,
+      "validation_mean_ms": 59.987512,
+      "validation_std_ms": 0.091843
+    }
+  ]
+}

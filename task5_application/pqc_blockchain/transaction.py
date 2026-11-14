@@ -30,10 +30,6 @@ class Transaction:
     def signing_bytes(self) -> bytes:
         return canonical_json(self.unsigned_dict())
 
-    @property
-    def txid(self) -> str:
-        return hashlib.sha256(self.signing_bytes() + self.signature).hexdigest()
-
     def to_dict(self) -> dict:
         return {**self.unsigned_dict(), "signature": self.signature.hex()}
 
