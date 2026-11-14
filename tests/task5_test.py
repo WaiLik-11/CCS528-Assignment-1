@@ -2,8 +2,9 @@ import unittest
 from cryptography.exceptions import InvalidTag
 from task5_application.main import build_demo
 from task5_application.pqc_blockchain.secure_channel import KEM_NAME, encrypt_submission
-from task5_application.pqc_blockchain.wallet import wallet_address
-from common.pqc import PQCKEMRecipient
+from task5_application.pqc_blockchain.ledger import BLOCK_CONTEXT
+from task5_application.pqc_blockchain.wallet import SIG_NAME, wallet_address
+from common.pqc import PQCKEMRecipient, PQCSigner
 
 class PQCBlockchainTests(unittest.TestCase):
     def test_wallet_address_is_hash_of_public_key_and_registry_resolves_it(self):
@@ -41,7 +42,7 @@ class PQCBlockchainTests(unittest.TestCase):
         )
         self.assertTrue(node.receive(env)[0])
 
-        restarted_validator = type(validator)(registry, ledger)
+        restarted_validator = type(validator)(registry, ledger, validator.signer)
         node.validator = restarted_validator
         ok, reason = node.receive(env)
         self.assertFalse(ok)
@@ -102,6 +103,37 @@ class PQCBlockchainTests(unittest.TestCase):
         env = encrypt_submission(registry.validator_kem_key(), tx.to_bytes(), registry.validator_kem_fingerprint())
         self.assertTrue(node.receive(env)[0])
         ledger.blocks[1].transactions[0]["amount"] = 1234
+        self.assertFalse(ledger.validate_chain())
+
+    def test_rewritten_block_rejected_without_validator_key(self):
+        alice, bob, registry, ledger, validator, node = build_demo()
+        tx = alice.create_transaction(bob.address, 10, 0)
+        env = encrypt_submission(registry.validator_kem_key(), tx.to_bytes(), registry.validator_kem_fingerprint())
+        self.assertTrue(node.receive(env)[0])
+        block = ledger.blocks[1]
+        block.transactions[0]["amount"] = 1234
+        block.seal()  # recomputed hash, old validator signature
+        self.assertFalse(ledger.validate_chain())
+        mallory = PQCSigner(SIG_NAME)
+        block.validator_signature = mallory.sign(bytes.fromhex(block.block_hash), BLOCK_CONTEXT)
+        self.assertFalse(ledger.validate_chain())
+        # Control: only the real validator key can make a rewritten block valid.
+        block.validator_signature = validator.signer.sign(bytes.fromhex(block.block_hash), BLOCK_CONTEXT)
+        self.assertTrue(ledger.validate_chain())
+
+    def test_block_signature_needs_block_context(self):
+        alice, bob, registry, ledger, validator, node = build_demo()
+        tx = alice.create_transaction(bob.address, 10, 0)
+        env = encrypt_submission(registry.validator_kem_key(), tx.to_bytes(), registry.validator_kem_fingerprint())
+        self.assertTrue(node.receive(env)[0])
+        block = ledger.blocks[1]
+        block.validator_signature = validator.signer.sign(bytes.fromhex(block.block_hash))  # no context
+        self.assertFalse(ledger.validate_chain())
+
+    def test_edited_genesis_rejected(self):
+        alice, bob, registry, ledger, validator, node = build_demo()
+        ledger.blocks[0].transactions.append({"recipient": "Mallory", "amount": 1000})
+        ledger.blocks[0].seal()
         self.assertFalse(ledger.validate_chain())
 
 if __name__ == "__main__":

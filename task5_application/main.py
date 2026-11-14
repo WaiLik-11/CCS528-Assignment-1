@@ -4,11 +4,11 @@ import argparse
 from cryptography.exceptions import InvalidTag
 
 from common.display import boolean_colour, flip_bit, format_colour, preview, section
-from common.pqc import PQCKEMRecipient, sha256
+from common.pqc import PQCKEMRecipient, PQCSigner, sha256
 from .pqc_blockchain.transaction import Transaction, canonical_json
 from .pqc_blockchain.wallet import SIG_NAME, Wallet
 from .pqc_blockchain.registry import Registry
-from .pqc_blockchain.ledger import Ledger
+from .pqc_blockchain.ledger import BLOCK_CONTEXT, Ledger
 from .pqc_blockchain.validator import Validator
 from .pqc_blockchain.node import ValidatorNode
 from .pqc_blockchain.secure_channel import KEM_NAME, encrypt_submission
@@ -17,17 +17,19 @@ def build_demo():
     alice = Wallet("Alice")
     bob = Wallet("Bob")
     validator_kem = PQCKEMRecipient(KEM_NAME)
+    validator_signer = PQCSigner(SIG_NAME)
     registry = Registry()
     alice_address = registry.register_wallet(alice.public_key)
     bob_address = registry.register_wallet(bob.public_key)
     assert alice_address == alice.address
     assert bob_address == bob.address
     registry.register_validator_kem_key(validator_kem.public_key)
+    registry.register_validator_signing_key(validator_signer.public_key)
 
-    ledger = Ledger()
+    ledger = Ledger(registry.validator_signing_key())
     ledger.set_initial_balance(alice.address, 100)
     ledger.set_initial_balance(bob.address, 0)
-    validator = Validator(registry, ledger)
+    validator = Validator(registry, ledger, validator_signer)
     node = ValidatorNode(validator_kem, validator)
     return alice, bob, registry, ledger, validator, node
 
@@ -53,10 +55,12 @@ def show_setup(alice, bob, registry, ledger) -> None:
     print("  Registered wallets: Alice, Bob (address -> ML-DSA public key)")
     print(f"  Validator {KEM_NAME} pk: {preview(registry.validator_kem_key())}")
     print(f"  Pinned fingerprint SHA-256(pk): {short(registry.validator_kem_fingerprint())}")
-    print(format_colour("  Assumption: the registry is trusted, like a PKI. Senders use it to check the validator's key."))
+    print(f"  Validator {SIG_NAME} block-signing pk: {preview(registry.validator_signing_key())}")
+    print(format_colour("  The validator has two key pairs: ML-KEM to receive submissions, ML-DSA to sign blocks."))
+    print(format_colour("  Assumption: the registry is trusted, like a PKI. Senders and ledger readers use it to check the validator's keys."))
 
     print("\n[Step 3] Genesis block")
-    print(f"  Block 0 hash: {short(ledger.blocks[0].block_hash)}")
+    print(f"  Block 0 hash: {short(ledger.blocks[0].block_hash)} (fixed and well known, so it is not signed)")
     print_balances(ledger, [alice, bob])
 
 # --------------------------------------------------------------------------
@@ -100,8 +104,9 @@ def normal_demo():
     block = ledger.blocks[-1]
     # In a real deployment, there will be multiple transactions and the block would be appended to the chain after consensus from multiple validators.
     print(f"  Block {block.index}: previous_hash {short(block.previous_hash)}  block_hash {short(block.block_hash)}")
+    print(f"  Validator signature over block_hash ({SIG_NAME}, ctx '{BLOCK_CONTEXT.decode()}'): {preview(block.validator_signature)}")
     print_balances(ledger, [alice, bob])
-    print(f"  Chain valid: {boolean_colour(ledger.validate_chain())}")
+    print(f"  Chain valid (hashes, links, validator signatures): {boolean_colour(ledger.validate_chain())}")
 
     return alice, ledger, validator, node, registry, envelope, tx
 
@@ -183,14 +188,20 @@ def attack_demo():
     block = ledger.blocks[1]
     block.transactions[0]["amount"] = 999
     print(f"  Stored block_hash: {short(block.block_hash)}  recomputed: {short(block.calculate_hash())}")
-    print(f"  Expected: validate_chain() detects the mismatch")
-    print(f"  Chain valid: {boolean_colour(ledger.validate_chain())}")
+    print("  (a) Edit only - Expected: hash mismatch")
+    print(f"      Chain valid: {boolean_colour(ledger.validate_chain())}")
 
-    print("\n  Stronger attacker: Mallory also recomputes block 1's hash (it is the newest block, so nothing later needs updating)")
     block.seal()
-    print(f"  Chain valid: {boolean_colour(ledger.validate_chain())}")
-    print(format_colour("""  LIMITATION: hash links only catch edits by someone who cannot rewrite the later blocks.
-  Real blockchains prevent rewrites with consensus over many copies or signed blocks; this PoC has neither.
+    print("  (b) Also recompute block_hash - Expected: the validator's signature no longer matches the new hash")
+    print(f"      Chain valid: {boolean_colour(ledger.validate_chain())}")
+
+    block.validator_signature = mallory.signer.sign(bytes.fromhex(block.block_hash), BLOCK_CONTEXT)
+    print("  (c) Also re-sign with her key - Expected: does not verify under the pinned validator pk")
+    print(f"      Chain valid: {boolean_colour(ledger.validate_chain())}")
+    print(format_colour("""  Hash links detect edits, and ML-DSA block signatures stop anyone without the validator's
+  sk from rewriting history, even after recomputing every hash."""))
+    print(format_colour("""  LIMITATION: the validator itself (or anyone who steals its sk) could still rewrite history.
+  Real blockchains remove this single point of trust with consensus among many validators; this PoC has one.
   Balances are also not recomputed from the chain, so the edit did not move any funds.""", "yellow"))
 
 def main():

@@ -26,14 +26,18 @@ def median_ms(fn: Callable[[], object], repeats: int = 10) -> float:
     return statistics.median(samples)
 
 def serialized_ledger_size(ledger: Ledger) -> int:
-    """Estimate ledger size as compact JSON blocks, including each stored hash."""
+    """Estimate ledger size as compact JSON blocks, including each stored hash and validator signature."""
     return sum(
-        len(canonical_json({**block.body(), "block_hash": block.block_hash}))
+        len(canonical_json({
+            **block.body(),
+            "block_hash": block.block_hash,
+            "validator_signature": block.validator_signature.hex(),
+        }))
         for block in ledger.blocks
     )
 
 def measure_transaction_workload(transaction_count: int, validation_repeats: int):
-    alice, bob, registry, ledger, _, node, _ = build_demo()
+    alice, bob, registry, ledger, _, node = build_demo()
     ledger.set_initial_balance(alice.address, transaction_count)
     initial_size = serialized_ledger_size(ledger)
     latencies_ms = []

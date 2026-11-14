@@ -5,9 +5,10 @@ from .ledger import Ledger
 from .registry import Registry
 
 class Validator:
-    def __init__(self, registry: Registry, ledger: Ledger):
+    def __init__(self, registry: Registry, ledger: Ledger, signer: PQCSigner):
         self.registry = registry
         self.ledger = ledger
+        self.signer = signer
         self.next_nonce: dict[str, int] = {}
         for block in ledger.blocks:
             for tx in block.transactions:
@@ -57,6 +58,6 @@ class Validator:
         ok, reason = self.validate_transaction(tx)
         if not ok:
             return False, reason
-        self.ledger.add_transaction(tx)
+        self.ledger.add_transaction(tx, self.signer)
         self.next_nonce[tx.sender] = tx.nonce + 1
         return True, "Accepted and appended to ledger"

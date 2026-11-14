@@ -6,7 +6,7 @@ This prototype demonstrates a minimal, local, permissioned blockchain workflow u
 - ML-KEM-768 key-establishment (FIPS 203)
 - HKDF-SHA-256 key derivation
 - AES-256-GCM payload encryption
-- SHA-256 hash-linked blocks
+- SHA-256 hash-linked blocks, each signed by the validator with ML-DSA-65
 - Public-key-derived wallet addresses and a trusted validator registry
 
 Users authorize transfers with ML-DSA-65, the transaction payload is encrypted with ML-KEM-768 + HKDF + AES-256-GCM, and accepted transactions are appended to a hash-linked ledger.
@@ -20,11 +20,12 @@ A future quantum computer could break classical public-key cryptography. This pr
 | Concern | Mechanism |
 |---|---|
 | Transaction authenticity | ML-DSA-65 signature verified against the sender's registered public key |
-| Confidentiality in transit | ML-KEM-768 shared secret, HKDF, AES-256-GCM |
-| Ledger integrity | SHA-256 hash links and `ledger.validate_chain()` |
+| Confidentiality in transit (not on the ledger, which members can read) | ML-KEM-768 shared secret, HKDF, AES-256-GCM |
+| Ledger integrity | SHA-256 hash links plus ML-DSA-65 validator block signatures, checked by `ledger.validate_chain()` |
 
 - Attacker can: read or tamper with network traffic, forge submitted transactions, replay captured transactions, and alter stored blocks.
 - Attacker cannot: steal private keys or break ML-DSA, ML-KEM, or AES.
+- Trusted: the registry, and the single validator not to rewrite its own history.
 - Assets: wallet balances, signed transactions, encrypted payloads, ledger history.
 - Out of scope: consensus, large-scale deployment, full PKI, side-channel hardening, real money.
 
@@ -72,7 +73,7 @@ The sender nonce prevents same-chain replay, and each block stores the hash of t
 | 3 | Swap the validator KEM public key | trusted public-key fingerprint check before ML-KEM encapsulation | `encrypt_submission()` rejects the mismatched validator key before the encrypted payload is created |
 | 4 | Change the amount or recipient after signing | ML-DSA-65 signature verification over canonical bytes | transaction verification fails because the signed payload no longer matches |
 | 5 | Attempt to impersonate another wallet | ML-DSA verification against the registered sender public key | the attacker-supplied signature does not verify for the registered identity, so the transaction is rejected |
-| 6 | Modify a historical block | SHA-256 hash chaining in `Ledger.validate_chain()` | the chain no longer hashes correctly and `validate_chain()` returns `False`. **Limitation:** an attacker who also recomputes the hashes of the edited block and every later block passes validation, because blocks are not signed and there is no consensus |
+| 6 | Modify a historical block | SHA-256 hash chaining plus ML-DSA-65 validator block signatures in `Ledger.validate_chain()` | `validate_chain()` returns `False` whether the attacker only edits the block, also recomputes its hash, or also re-signs it with their own key. **Limitation:** the validator itself, or anyone holding its private key, could still rewrite history; consensus among several validators would remove that trust |
 
 The attack demo runs these in this order: network (1, 2), sender (3), validator (4, 5), then storage (6), because attack 6 modifies the ledger.
 
