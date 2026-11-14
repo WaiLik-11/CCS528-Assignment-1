@@ -59,8 +59,8 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 ## 4. Installation
 
 ```bash
-git clone <repo-url>
-cd assignment-1
+git clone https://github.com/WaiLik-11/CCS528-Assignment-1.git
+cd CCS528-Assignment-1
 
 uv sync          # creates .venv with Python 3.12 and the exact versions in uv.lock
 
@@ -94,7 +94,7 @@ Outputs (CSV files, figures, circuit diagrams, and JSON measurements) are writte
 ## 6. Program Structure
 
 ```
-assignment-1/
+CCS528-Assignment-1/
 ├── README.md               # This file (deliverable B)
 ├── pyproject.toml          # Python dependencies (managed by uv)
 ├── uv.lock                 # Exact pinned versions, shared by the team
