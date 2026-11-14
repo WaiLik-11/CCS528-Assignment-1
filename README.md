@@ -115,15 +115,7 @@ CCS528-Assignment-1/
 └── rubric/                 # Assignment brief and rubric (reference only)
 ```
 
-## 7. Team Workflow
-
-1. Never commit directly to `main`. Create a branch for each task: `git checkout -b task2-mlkem`.
-2. Commit small changes often, then open a Pull Request so your teammate can review before merging.
-3. Pull before starting work: `git pull origin main`.
-4. Do not commit `.venv/`, build folders or large generated files (see `.gitignore`).
-5. Keep this repository **private** so other groups cannot copy it.
-
-## 8. Rubric Checklist (each criterion is 20%)
+## 7. Rubric Checklist (each criterion is 20%)
 
 > The rubric says: *"Simply executing existing toolkit examples without modification, experimentation or explanation will receive limited marks."*
 > Every task therefore needs original code, its own experiments, and a written explanation.
@@ -199,7 +191,7 @@ The threat model assumes an untrusted network attacker can read, alter, forge, o
 
 The evaluation script reports median ML-KEM/ML-DSA timings, payload size and ledger growth, end-to-end transaction latency, throughput, and full-chain validation times for configurable sample counts. These outputs support the coursework demo rather than production benchmarking.
 
-## 9. References
+## 8. References
 
 1. NIST FIPS 203, *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, 2024.
 2. NIST FIPS 204, *Module-Lattice-Based Digital Signature Standard*, 2024.
