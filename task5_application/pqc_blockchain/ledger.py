@@ -57,6 +57,8 @@ class Ledger:
         self.balances = new_balances
 
     def validate_chain(self) -> bool:
+        # Detects edits unless the attacker recomputes every later hash (no block signatures)
+        # Attacks stopped: tampered blocks, broken hash links
         if not self.blocks:
             return False
         for i, block in enumerate(self.blocks):

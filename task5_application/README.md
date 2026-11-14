@@ -68,11 +68,13 @@ The sender nonce prevents same-chain replay, and each block stores the hash of t
 | # | Attack | Security mechanism | Expected detection |
 |---|---|---|---|
 | 1 | Replay an accepted transaction | Per-sender nonce + validator nonce check | the second submission is rejected because the expected nonce has already been used |
-| 2 | Tamper with ciphertext | AES-256-GCM authentication tag and AAD binding | decryption fails with an integrity error because the tag no longer matches |
+| 2 | Tamper with ciphertext | AES-256-GCM authentication tag, with the key bound to the KEM ciphertext by HKDF | changing the AES ciphertext, AES nonce or KEM ciphertext makes decryption fail with `InvalidTag` |
 | 3 | Swap the validator KEM public key | trusted public-key fingerprint check before ML-KEM encapsulation | `encrypt_submission()` rejects the mismatched validator key before the encrypted payload is created |
-| 4 | Modify a historical block | SHA-256 hash chaining in `Ledger.validate_chain()` | the chain no longer hashes correctly and `validate_chain()` returns `False` |
-| 5 | Change the amount or recipient after signing | ML-DSA-65 signature verification over canonical bytes | transaction verification fails because the signed payload no longer matches |
-| 6 | Attempt to impersonate another wallet | ML-DSA verification against the registered sender public key | the attacker-supplied signature does not verify for the registered identity, so the transaction is rejected |
+| 4 | Change the amount or recipient after signing | ML-DSA-65 signature verification over canonical bytes | transaction verification fails because the signed payload no longer matches |
+| 5 | Attempt to impersonate another wallet | ML-DSA verification against the registered sender public key | the attacker-supplied signature does not verify for the registered identity, so the transaction is rejected |
+| 6 | Modify a historical block | SHA-256 hash chaining in `Ledger.validate_chain()` | the chain no longer hashes correctly and `validate_chain()` returns `False`. **Limitation:** an attacker who also recomputes the hashes of the edited block and every later block passes validation, because blocks are not signed and there is no consensus |
+
+The attack demo runs these in this order: network (1, 2), sender (3), validator (4, 5), then storage (6), because attack 6 modifies the ledger.
 
 ## 5. Running the demo
 

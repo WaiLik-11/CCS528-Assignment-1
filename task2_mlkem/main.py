@@ -69,7 +69,7 @@ def key_establishment(kem_name: str) -> tuple[PQCKEMRecipient, bytes, bytes, byt
 # Part 2: what an attacker gets from tampering or from a different key pair
 # --------------------------------------------------------------------------
 def negative_tests(alice: PQCKEMRecipient, ciphertext: bytes, bob_secret: bytes) -> bytes:
-    section(f"PART 2: Negative tests {format_colour("(TODO: CHECK WITH DR MANMEET IF ATTACKS TESTS ARE NEEDED FOR TASK 2)", "red")}")
+    section(f"PART 2: Negative tests")
 
     print("\n[Test A] Mallory tampers with the ciphertext (one bit of ct flipped in transit)")
     tampered = flip_bit(ciphertext)

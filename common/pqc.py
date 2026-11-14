@@ -78,8 +78,7 @@ def derive_aes_key(shared_secret: bytes, kem_ciphertext: bytes, context: bytes) 
     return HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b"PQBlockchain-salt",
-        info=b"PQBlockchain|" + context + b"|" + sha256(kem_ciphertext),
+        info=b"CCS528-key|" + context + b"|" + sha256(kem_ciphertext),
     ).derive(shared_secret)
 
 

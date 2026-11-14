@@ -1,11 +1,11 @@
 """Validator node: receives encrypted transaction envelope."""
 from .transaction import Transaction
 from .secure_channel import decrypt_submission
+from .validator import Validator
 
 class ValidatorNode:
-    def __init__(self, kem_recipient, registry, validator):
+    def __init__(self, kem_recipient, validator: Validator):
         self.kem_recipient = kem_recipient
-        self.registry = registry
         self.validator = validator
 
     def receive(self, envelope):
