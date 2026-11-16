@@ -6,9 +6,6 @@
 |--------|-----------|
 | AU WAI LIK | 25203542 |
 | TIFFANY TIEN NEE PRAGASAM | 25203306 |
-
-- **Submission deadline:** 17/11/2026 (Tuesday, before 5 pm), via E-learn
-- **Demonstration:** 24/11/2026
 ---
 
 ## 1. Overview
