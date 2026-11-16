@@ -22,7 +22,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8",
     # Build tools for liboqs, installed via pip so both OSes get the same versions
     "cmake>=3.28",
     "ninja>=1.11",
@@ -36,6 +35,3 @@ members = ["common"]
 
 [tool.uv.sources]
 common = { workspace = true }
-
-[tool.pytest.ini_options]
-pythonpath = [".", "task5_application"]
