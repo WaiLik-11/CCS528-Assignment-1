@@ -87,13 +87,47 @@ uv run python -m task5_application.main --mode attacks
 uv run python -m task5_application.evaluation
 ```
 
-To validate the logic with the included tests:
+- `--mode normal` prints the setup, one signed transfer (Alice pays Bob 25) travelling through the secure channel, and the resulting block. It ends with `Chain valid: True`.
+- `--mode attacks` runs the normal flow first, then the six attacks above. Every attack must print `REJECTED`, and the last one must print `Chain valid: False`.
+- `evaluation` writes `results/data/task5/evaluation.json` and `results/figures/task5/evaluation.png`.
 
-```bash
-uv run pytest tests/task5_test.py -v
-```
+## 6. Evaluation results (1000 runs, Linux x86-64, Python 3.12, liboqs 0.16.0)
 
-## 6. Notes
+![Task 5 evaluation](../results/figures/task5/evaluation.png)
+
+Time per stage of one transaction (mean ± std):
+
+| Stage | Time (µs) |
+|---|---|
+| Wallet: build transaction + ML-DSA sign | 105.8 ± 58.5 |
+| Sender: pin check + ML-KEM encaps + HKDF + AES-GCM | 41.7 ± 0.6 |
+| Validator: ML-KEM decaps + HKDF + AES-GCM decrypt | 22.3 ± 0.4 |
+| Validator: checks including ML-DSA verify | 45.0 ± 1.0 |
+| Ledger: block hash + ML-DSA block signature | 128.2 ± 61.5 |
+| **End to end** | **361.7 ± 88.2** |
+
+Bytes per transaction, against the same design with Ed25519 and X25519 (an estimate made by substituting their sizes; signatures are stored as hex, so each takes twice its raw size):
+
+| Design | On the wire (B) | On the ledger (B) |
+|---|---|---|
+| ML-DSA-65 + ML-KEM-768 | 7,949 | 13,691 |
+| Ed25519 + X25519 (estimate) | 403 | 711 |
+
+Throughput and full-chain validation:
+
+| Blocks | Throughput (tx/s) | Ledger size (B) | Validate chain (ms) |
+|---|---|---|---|
+| 10 | 2,595.9 | 137,142 | 0.60 |
+| 100 | 2,745.2 | 1,369,513 | 6.00 |
+| 1000 | 2,796.5 | 13,695,014 | 59.99 |
+
+Observations:
+- **Computation is not the bottleneck.** A transaction takes about 0.36 ms end to end. The two ML-DSA signing steps (wallet and block) dominate it, and their variance comes from ML-DSA's rejection sampling (Task 3).
+- **Size is the cost.** The PQC design is about 20 times larger than the classical estimate, both on the wire and on the ledger, because ML-DSA-65 signatures (3,309 B) and the ML-KEM-768 ciphertext (1,088 B) are much larger than their classical counterparts. Every block stores two signatures (wallet and validator), so this directly grows the ledger.
+- **Validation time grows linearly with chain length** (about 0.06 ms per block), because every block's hash link and ML-DSA signature are checked.
+- Timings come from a single machine through Python, so rerun on the demo machine before quoting them.
+
+## 7. Notes
 
 - Wallet addresses are derived from the SHA-256 hash of the ML-DSA public key.
 - The registry trusts the validator KEM public key fingerprint before a sender encrypts a fresh KEM ciphertext.

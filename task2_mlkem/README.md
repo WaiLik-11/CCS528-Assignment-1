@@ -8,12 +8,6 @@ uv run python -m task2_mlkem.main --benchmark        # walkthrough + benchmark (
 
 Benchmark outputs: `results/data/task2/mlkem_benchmark.json` and `results/figures/task2/mlkem_benchmark.png`.
 
-To validate the logic with the included tests:
-
-```bash
-uv run pytest tests/task2_test.py -v
-```
-
 ## 1. What the program does
 
 ML-KEM comes from the Open Quantum Safe library (`liboqs` 0.16, through `liboqs-python`). It is called through the shared wrappers in [`common/pqc.py`](../common/pqc.py).
@@ -38,7 +32,7 @@ ML-KEM comes from the Open Quantum Safe library (`liboqs` 0.16, through `liboqs-
 Observations:
 - **Every operation finishes in tens of microseconds**, so ML-KEM adds almost no computational cost to a handshake. Going from ML-KEM-512 (level 1) to ML-KEM-1024 (level 5) makes key generation 1.65× slower, encapsulation 1.58× and decapsulation 1.98×, so decapsulation grows fastest.
 - **Size is the main cost.** Key and ciphertext sizes grow linearly with the module rank k = 2, 3, 4. ML-KEM-768 sends 1184 + 1088 = 2272 bytes per handshake, compared with 64 bytes for X25519 (Task 4 compares this directly). The shared secret is always 32 bytes.
-- The measured sizes match FIPS 203 Table 3 exactly (checked in `tests/task2_test.py`).
+- The measured sizes match FIPS 203 Table 3 exactly.
 - Measurement caveat: the times are wall-clock through the Python/ctypes wrapper and include creating the liboqs context, so they overstate the raw C cost. The overhead is the same for all three sets, so the comparison between them is still valid. Rerun on the demo machine before quoting numbers.
 
 ## 3. The role of ML-KEM in post-quantum security

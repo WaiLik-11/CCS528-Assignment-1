@@ -8,17 +8,11 @@ uv run python -m task3_mldsa.main --benchmark         # experiments + measuremen
 
 Benchmark outputs: `results/data/task3/mldsa_benchmark.json` and `results/figures/task3/mldsa_benchmark.png`. The timings and sizes are measured only by `--benchmark`, so run it to get the six metrics that Experiment B asks for.
 
-To validate the logic with the included tests:
-
-```bash
-uv run pytest tests/task3_test.py -v
-```
-
 ## 1. What the program does
 
 ML-DSA comes from the Open Quantum Safe library (`liboqs` 0.16, through `liboqs-python`). It is called through the shared `PQCSigner` wrapper in [`common/pqc.py`](../common/pqc.py), the same wrapper that signs transactions in Task 5. Alice signs a payment instruction and Bob verifies it:
 
-> M = `Alice authorises payment of RM 5,000 to Bob, account 1234, ref INV-2026-118.`
+> M = `Alice authorises payment of RM 5,000 to Bob, account 1234, ref INV-2026-528.`
 
 | Part | Flow | Evidence produced |
 |------|------|-------------------|
@@ -70,14 +64,14 @@ Observations:
 - **Verification runs in a fixed amount of work and does not stop early on a forgery.** Checking the tampered message from Experiment B takes the same time as checking a valid signature (41.1 µs for both with ML-DSA-65), so timing does not reveal *where* a forgery went wrong.
 - **Size costs more than time.** An ML-DSA-65 signature is 3309 B and its public key is 1952 B. Ed25519 uses 64 B and 32 B, and ECDSA P-256 uses about 72 B and 64 B (Task 4 compares them directly). A certificate chain that carries several signatures and keys grows by kilobytes. That matters for TLS handshakes, firmware images and blockchain transactions (Task 5) more than the microseconds of computation.
 - Going from level 2 to level 5 makes keys and signatures about 1.9–2× larger and key generation and verification about 2.3× slower. On average, every operation still finishes within about 0.13 ms.
-- The measured sizes match FIPS 204 Table 2 exactly (checked in `tests/task3_test.py`).
+- The measured sizes match FIPS 204 Table 2 exactly.
 - Measurement caveat: the times are wall-clock through the Python/ctypes wrapper and include creating a liboqs context for key generation and verification, so they overstate the raw C cost. The overhead is the same for all three sets, so comparing them is still valid. Rerun on the demo machine before quoting numbers.
 
 ## 3. Integrity, authenticity and non-repudiation
 
 **What ML-DSA signs.** ML-DSA does not sign M directly. It signs a 64-byte *message representative*
 μ = SHAKE256(tr ‖ M′), with tr = SHAKE256(pk) and M′ = 0 ‖ len(ctx) ‖ ctx ‖ M (FIPS 204, Algorithms 2 and 7).
-The program computes μ itself (`message_representative`). The test suite checks it against liboqs: it signs our μ with the `ML-DSA-65-extmu` variant and confirms that plain ML-DSA accepts the result. So μ depends on three things: every bit of the message, the signer's public key, and the context string. The tampering matrix changes each of them in turn.
+The program computes μ itself (`message_representative`) and prints it. So μ depends on three things: every bit of the message, the signer's public key, and the context string. The tampering matrix changes each of them in turn.
 
 **Integrity: was the message changed?** In Experiment B only 2 bits of M change, but μ changes in about half of its 512 bits (254 in the recorded run; the exact number depends on the key), as expected from a good hash. Verification recomputes the signer's commitment w₁′ from (pk, z, h, μ\*) and checks that c̃ = H(μ\* ‖ w₁′). That equation only holds for the μ that Alice committed to when signing. The tampering tests show this in practice: every modification of the message and of the signature is rejected. A signature does not stop a message from being changed, and it does not hide it (ML-DSA gives no confidentiality; Task 2's AES-GCM layer does that). It makes any change *detectable* by anyone who holds the public key.
 

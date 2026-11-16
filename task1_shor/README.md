@@ -7,13 +7,7 @@ uv run python -m task1_shor.main
 This prints every stage of the attack for `a = 2`, saves the circuit diagram and measurement
 histogram to `results/figures/task1/`, breaks the toy RSA key, then measures qubits, circuit
 depth, gate counts, execution time and success rate for every valid `a` (repeated 5 times each),
-saved to `results/data/task1/shor_results.json`.
-
-To validate the logic with the included tests:
-
-```bash
-uv run pytest tests/task1_test.py -v
-```
+saved to `results/data/task1/shor_results.json`. The program has no command-line options.
 
 ## 1. What the program does
 
@@ -47,10 +41,18 @@ so no arithmetic gates are needed. The number of counting qubits follows the sta
 
 With `a = 2`, the true period is `r = 4`, so the inverse QFT concentrates the 1024 shots onto 4
 peaks at `y = 0, 64, 128, 192` out of 256 possible 8-bit outcomes (each peak labelled with its
-recovered period `r` in the histogram). Three of the four peaks (`y = 64, 128, 192`) give
-`r = 4, 2, 4` and all lead to the correct factors 3 and 5; the `y = 0` peak gives phase 0, which
-continued fractions reads as `r = 1` and correctly contributes no factors. This is why the
-measured success rate is close to 75%, not 100%.
+recovered period `r` in the histogram). Each peak is a multiple `s/r` of the phase `y / 256`:
+
+| y | phase y/256 | estimated r | check | result |
+|---|---|---|---|---|
+| 0   | 0   | 1 | `r` is odd | no factors |
+| 64  | 1/4 | 4 | 2^4 mod 15 = 1, and 2^2 mod 15 = 4 (not 14) | factors 3 and 5 |
+| 128 | 1/2 | 2 | 2^2 mod 15 = 4, not 1 | wrong period, rejected |
+| 192 | 3/4 | 4 | 2^4 mod 15 = 1, and 2^2 mod 15 = 4 (not 14) | factors 3 and 5 |
+
+Only `y = 64` and `y = 192` (where `s` and `r = 4` share no common factor) reveal the true period,
+so the success rate is close to 50%, not 100%. Shor's algorithm is probabilistic: a failed shot is
+simply discarded, and a handful of shots is enough to find the factors.
 
 ### Metrics across every valid a (shots = 1024, 5 repeats each)
 

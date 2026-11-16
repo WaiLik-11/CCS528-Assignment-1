@@ -33,15 +33,6 @@ Thumbs.db
 .idea/
 .vscode/
 
-# LaTeX build artefacts
-report/**/*.aux
-report/**/*.log
-report/**/*.out
-report/**/*.toc
-report/**/*.synctex.gz
-report/**/*.fdb_latexmk
-report/**/*.fls
-
 # Task 5 private key files – never commit
 keys/
 *.sk
