@@ -18,43 +18,48 @@ Task 4 does not introduce any new cryptography. It takes the classical baselines
 
 Every classical scheme is wrapped in the same `(keygen, encaps, decaps)` / `(keygen, sign, verify)` shape as the PQC schemes, so all rows can be timed with the same `sample_ms()`/`summarize()` helpers and placed in one table. `keygen_cpu` is a second, independent timer (CPU time, i.e. user+system time) measured with `sample_cpu_ms()`, useful because RSA key generation time varies a lot (it searches for large primes) — CPU time confirms whether that variance is real computation or just OS scheduling noise. "Handshake bytes" / "signed-message bytes" is the communication-overhead metric: how many bytes actually have to cross the network for one exchange.
 
-## 2. Results (200 runs, Windows 11, Python 3.12, liboqs 0.16.0)
+## 2. Results (`--runs 200`, Linux x86-64, Python 3.12, liboqs 0.16.0)
 
 ### Key establishment
 
 | Scheme | PQ-safe | KeyGen (µs) | KeyGen CPU (µs) | Encaps (µs) | Decaps (µs) | Public key (B) | Ciphertext (B) | Handshake (B) |
 |---|---|---|---|---|---|---|---|---|
-| RSA-3072    | no  | 121,242 ± 78,738 | 112,500 ± 71,080 | 30.1 ± 1.5  | 1,306.5 ± 91.0 | 398  | 384  | 782  |
-| ECDH-P256   | no  | 9.1 ± 0.4         | 8.8 ± 2.8         | 48.3 ± 1.5  | 41.1 ± 1.8    | 65   | 65   | 130  |
-| X25519      | no  | 18.8 ± 1.5        | 17.5 ± 3.6         | 42.7 ± 15.9 | 23.1 ± 0.6    | 32   | 32   | 64   |
-| ML-KEM-512  | yes | 110.8 ± 4.0       | 109.9 ± 25.0       | 141.0 ± 8.1 | 166.7 ± 5.6   | 800  | 768  | 1,568 |
-| ML-KEM-768  | yes | 177.7 ± 5.4       | 177.0 ± 62.3       | 201.2 ± 28.4| 253.3 ± 19.5  | 1,184| 1,088| 2,272 |
-| ML-KEM-1024 | yes | 262.2 ± 21.6      | 256.3 ± 96.2       | 290.4 ± 21.7| 346.0 ± 30.5  | 1,568| 1,568| 3,136 |
+| RSA-3072    | no  | 144,762 ± 85,899 | 163,977 ± 120,349 | 39.9 ± 6.1  | 1,491.2 ± 75.6 | 398   | 384   | 782   |
+| ECDH-P256   | no  | 11.3 ± 0.5       | 11.4 ± 0.2        | 68.2 ± 3.4  | 56.6 ± 2.7     | 65    | 65    | 130   |
+| X25519      | no  | 25.8 ± 3.0       | 25.9 ± 0.2        | 53.6 ± 2.3  | 28.0 ± 0.9     | 32    | 32    | 64    |
+| ML-KEM-512  | yes | 12.0 ± 2.2       | 12.0 ± 0.1        | 13.6 ± 0.4  | 10.4 ± 0.3     | 800   | 768   | 1,568 |
+| ML-KEM-768  | yes | 15.9 ± 0.4       | 16.1 ± 0.2        | 17.6 ± 1.9  | 15.1 ± 0.3     | 1,184 | 1,088 | 2,272 |
+| ML-KEM-1024 | yes | 20.2 ± 2.3       | 19.9 ± 0.0        | 21.6 ± 0.3  | 20.4 ± 0.3     | 1,568 | 1,568 | 3,136 |
 
 ### Digital signatures
 
 | Scheme | PQ-safe | KeyGen (µs) | KeyGen CPU (µs) | Sign (µs) | Verify (µs) | Public key (B) | Signature (B) | Signed message (B) |
 |---|---|---|---|---|---|---|---|---|
-| RSA-3072-PSS | no  | 117,992 ± 75,199 | 150,000 ± 122,235 | 1,383.5 ± 109.7 | 31.4 ± 2.4  | 398  | 384  | 782  |
-| ECDSA-P256   | no  | 9.0 ± 0.3        | 9.3 ± 1.9          | 18.0 ± 0.6      | 46.6 ± 12.9 | 65   | 70   | 135  |
-| Ed25519      | no  | 17.7 ± 0.6       | 17.9 ± 3.7         | 17.4 ± 0.6      | 48.2 ± 2.8  | 32   | 64   | 96   |
-| ML-DSA-44    | yes | 317.9 ± 21.6     | 317.4 ± 61.4       | 1,356.7 ± 777.7 | 373.0 ± 43.2| 1,312| 2,420| 3,732 |
-| ML-DSA-65    | yes | 565.6 ± 54.5     | 561.5 ± 114.8      | 1,813.9 ± 1,066.1| 606.8 ± 59.1| 1,952| 3,309| 5,261 |
-| ML-DSA-87    | yes | 898.1 ± 50.6     | 878.9 ± 200.4      | 2,311.9 ± 1,234.8| 947.3 ± 64.8| 2,592| 4,627| 7,219 |
+| RSA-3072-PSS | no  | 129,441 ± 82,571 | 132,080 ± 115,905 | 1,519.0 ± 77.4 | 37.0 ± 2.0 | 398   | 384   | 782   |
+| ECDSA-P256   | no  | 11.5 ± 1.1       | 11.7 ± 0.1        | 20.8 ± 1.2     | 60.3 ± 2.1 | 65    | 72    | 137   |
+| Ed25519      | no  | 25.8 ± 2.3       | 26.0 ± 0.1        | 25.8 ± 1.5     | 82.6 ± 3.2 | 32    | 64    | 96    |
+| ML-DSA-44    | yes | 26.7 ± 2.2       | 27.0 ± 0.0        | 66.2 ± 37.3    | 27.7 ± 2.1 | 1,312 | 2,420 | 3,732 |
+| ML-DSA-65    | yes | 42.4 ± 2.8       | 42.7 ± 0.1        | 103.2 ± 56.2   | 42.7 ± 2.9 | 1,952 | 3,309 | 5,261 |
+| ML-DSA-87    | yes | 62.8 ± 3.3       | 63.5 ± 0.2        | 120.0 ± 50.5   | 61.8 ± 3.8 | 2,592 | 4,627 | 7,219 |
+
+The raw numbers are in `results/data/task4/`. "Handshake" is the public key plus the ciphertext, and "Signed message" is the public key plus one signature.
 
 ![Key establishment: classical vs ML-KEM](../results/figures/task4/kem_comparison.png)
 ![Signatures: classical vs ML-DSA](../results/figures/task4/signature_comparison.png)
 
 ## 3. Security, performance and resource trade-offs
 
-- **Time:** every classical and PQC operation here finishes in well under 2.5 ms, except RSA-3072 key generation, which takes **~100–120 ms and swings wildly** (±65–78 ms) because it searches for two large random primes by trial division — a fundamentally different, much more expensive process than the lattice arithmetic ML-KEM/ML-DSA use. ECDH/X25519/Ed25519 keygen (a single scalar multiply) stays under 20 µs. ML-KEM and ML-DSA keygen are slightly slower than ECC (hundreds of µs, not single-digit µs) but still two to three orders of magnitude faster than RSA.
-- **Size is the real cost of going post-quantum.** ML-KEM-768's 1,184-byte public key + 1,088-byte ciphertext (2,272 bytes/handshake) is about **17× larger** than X25519's 64-byte handshake. ML-DSA-65's 1,952-byte key + 3,309-byte signature (5,261 bytes) is roughly **39× larger** than Ed25519's 96 bytes. For a protocol with tight bandwidth (e.g. constrained IoT links), this is the dominant trade-off, not CPU time.
-- **Security level isn't a fair like-for-like comparison.** RSA-3072/P-256/X25519/Ed25519 all sit at roughly NIST level 1 (~128-bit classical security); the table has no classical equivalent of ML-KEM-768/1024 or ML-DSA-65/87 (NIST levels 3 and 5), since classical schemes don't have a direct "level 3/5" classical counterpart in this comparison. Comparing ML-KEM-768 against RSA-3072 is therefore only approximate.
-- **CPU time mostly confirms wall-clock time**, except for RSA-3072 keygen, where the CPU-time estimate (`keygen_cpu`) is itself noisy because it is averaged over only 20 repeats (to keep the benchmark fast) versus 200 repeats for wall-clock time — the two RSA numbers in the table above should be read as "both roughly 100–150 ms, both highly variable," not compared digit-for-digit.
-- **Bottom line:** against RSA specifically, ML-KEM/ML-DSA are a win on both time and predictability, at the cost of bigger keys/signatures. Against ECC (ECDH/X25519/Ed25519), classical schemes are still faster and far smaller per operation — the price of quantum safety here is almost entirely extra bytes on the wire, not extra CPU time.
+- **Time, key establishment:** RSA-3072 key generation takes about **145 ms and varies a lot** (±86 ms), because it searches for two large random primes. That is roughly 9,000× slower than ML-KEM-768 (15.9 µs), and RSA decapsulation (1.49 ms) is about 99× slower than ML-KEM-768 decapsulation (15.1 µs). ML-KEM is also faster than the elliptic-curve schemes in this measurement: ML-KEM-768 encapsulation takes 17.6 µs against 53.6 µs for X25519 and 68.2 µs for ECDH-P256, because an ECDH "encapsulation" has to generate an ephemeral key and then do a second scalar multiplication. Only ECDH-P256 key generation (11.3 µs) is faster than ML-KEM-512 (12.0 µs). RSA encapsulation (39.9 µs) is cheap because the public exponent is small.
+- **Time, signatures:** ML-DSA key generation (26.7–62.8 µs) is 1–5× slower than ECDSA/Ed25519, and **signing is the slowest ML-DSA operation** (103.2 µs for ML-DSA-65, against 20.8 µs for ECDSA and 25.8 µs for Ed25519) with a large standard deviation, caused by the rejection-sampling loop (see Task 3). Verification is competitive: ML-DSA-65 (42.7 µs) is faster than Ed25519 (82.6 µs) and ECDSA (60.3 µs) here. RSA-3072 signing is the slowest at 1.52 ms (about 15× slower than ML-DSA-65), but its verification (37.0 µs) is the fastest of all schemes.
+- **Size is the real cost of going post-quantum.** ML-KEM-768's 1,184-byte public key plus 1,088-byte ciphertext (2,272 bytes per handshake) is about **35× larger** than X25519's 64 bytes, 17× larger than ECDH-P256, and 2.9× larger than RSA-3072. ML-DSA-65's 1,952-byte key plus 3,309-byte signature (5,261 bytes) is about **55× larger** than Ed25519's 96 bytes, 38× larger than ECDSA, and 6.7× larger than RSA-3072. For a protocol with tight bandwidth (for example constrained IoT links), this matters more than CPU time.
+- **Security.** None of the classical schemes is quantum-safe: Shor's algorithm (Task 1) breaks RSA, ECDH, X25519, ECDSA and Ed25519 alike, and key establishment is also exposed to "harvest now, decrypt later". RSA-3072, P-256, X25519 and Ed25519 all offer about 128-bit classical security (roughly NIST level 1), so the fairest comparison is against ML-KEM-512 (level 1). ML-KEM-768/1024 and ML-DSA-65/87 (levels 3 and 5) have no classical counterpart in this comparison.
+- **CPU time** (measured for key generation) is almost identical to wall-clock time for every scheme, because each operation is single-threaded and never waits. For RSA-3072 both numbers are large and highly variable (standard deviation is 60–90% of the mean), so they should be read as "roughly 130–165 ms", not compared digit for digit.
+- **Bottom line:** against RSA, ML-KEM and ML-DSA are faster for key generation, key establishment and signing, at the cost of larger keys and signatures. Against ECC, ML-KEM key generation is within about 2× and encapsulation/decapsulation are 2–4× faster, ML-DSA signs 4–5× more slowly, and both are 17–55× larger on the wire. The price of quantum safety is therefore mostly **bandwidth and storage**, not CPU time.
 
 ## 4. Limitations
 
-- Single-machine, single-run numbers (Windows 11, Python 3.12); absolute values will differ on other hardware, though the relative ordering between schemes should not.
-- `keygen_cpu` uses `time.process_time()`, which only advances in ~15 ms steps on Windows. Fast keygens (ECDH/X25519/ML-KEM/ML-DSA) are measured by batching many calls together (see `sample_cpu_ms()` in [common/timing.py](../common/timing.py)) so the result stays meaningful; CPU and memory usage under concurrent load are out of scope.
-- Only one classical curve (P-256/X25519) and one RSA modulus size (3072-bit) are benchmarked; a full NIST-level-matched comparison would also need P-384/P-521 and larger RSA moduli.
+- The numbers come from one machine (Linux x86-64, Python 3.12) and absolute values will differ on other hardware, though the relative ordering between schemes should not. Rerun on the demo machine before quoting them.
+- The classical schemes run through OpenSSL (the `cryptography` package) and the PQC schemes through liboqs and its Python/ctypes wrapper, which creates a context on every call. This overstates the PQC times slightly, so the real gap in favour of ML-KEM/ML-DSA is, if anything, larger.
+- `keygen_cpu` uses `time.process_time()`, a coarse OS clock. Fast key generations are therefore timed in batches of calls (see `sample_cpu_ms()` in [common/timing.py](../common/timing.py)) and averaged over 20 samples, instead of the 200 used for wall-clock time. This is why the RSA CPU numbers are noisier.
+- Memory usage and CPU usage under concurrent load are not measured. The four metrics reported are wall-clock time, CPU time (key generation), key/ciphertext/signature size and communication overhead.
+- Only one classical curve (P-256/X25519) and one RSA modulus size (3072-bit) are benchmarked. A full NIST-level-matched comparison would also need P-384/P-521 and larger RSA moduli.
