@@ -32,7 +32,7 @@ The C compiler is the only part that differs between operating systems:
 | OS | How to get the C compiler |
 |----|---------------------------|
 | macOS | `xcode-select --install`. Skip this if `xcode-select -p` already prints a path; installing Git usually installs it too |
-| Windows | Install [Visual Studio **2022** Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and tick **Desktop development with C++** (it includes a Windows 11 SDK). VS 2019 with the Windows 10 SDK fails with `Cannot open include file: 'stdalign.h'` |
+| Windows | Install [Visual Studio **2022** Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and tick **Desktop development with C++** (it includes a Windows 11 SDK). |
 
 Install uv:
 
