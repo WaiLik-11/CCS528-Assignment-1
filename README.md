@@ -64,7 +64,7 @@ cd CCS528-Assignment-1
 
 uv sync          # creates .venv with Python 3.12 and the exact versions in uv.lock
 
-# On first import, liboqs-python builds liboqs into ~/_oqs (this takes a few minutes, once per machine).
+# On first import, liboqs-python downloads and builds liboqs into ~/_oqs (needs internet, takes a few minutes, once per machine).
 
 # On Windows, if the build cannot find a compiler, run it from the "x64 Native Tools Command Prompt for VS".
 uv run python -c "import oqs; print(oqs.get_enabled_kem_mechanisms())"
@@ -77,19 +77,22 @@ To add a dependency, run `uv add <package>` and commit both `pyproject.toml` and
 Run all commands from the repository root.
 
 ```bash
-uv run python -m task1_shor.main                           # BREAK:   Shor's algorithm for N = 15
-uv run python -m task1_shor.main --a 14                    # BREAK:   a failing choice of a (14 = -1 mod 15)
-uv run python -m task1_shor.main --experiments            # BREAK:   metrics for every valid a, saved to results/
-uv run python -m task2_mlkem.main                          # PROTECT: ML-KEM and an AES-GCM session
-uv run python -m task3_mldsa.main                          # PROTECT: ML-DSA, Experiments A and B (--benchmark for all parameter sets)
-uv run python -m task4_benchmark.main                      # COMPARE: writes CSVs and graphs to results/
+uv run python -m task1_shor.main                           # BREAK:   Shor's algorithm for N = 15, then metrics for every valid a
+uv run python -m task2_mlkem.main                          # PROTECT: ML-KEM and an AES-GCM session (add --benchmark for timings)
+uv run python -m task3_mldsa.main                          # PROTECT: ML-DSA Experiments A and B (add --benchmark for timings)
+uv run python -m task4_benchmark.main                      # COMPARE: classical vs PQC, writes CSVs and graphs to results/
 uv run python -m task5_application.main --mode normal      # APPLY: quantum-safe blockchain demo
 uv run python -m task5_application.main --mode attacks     # APPLY: replay / tamper / ledger attack scenarios
 uv run python -m task5_application.evaluation              # APPLY: timing, size, and throughput measurements
-uv run pytest                                              # run tests
 ```
 
-Outputs (CSV files, figures, circuit diagrams, and JSON measurements) are written to [results/](results/).
+Notes:
+
+- Each task is a separate Python module, so run it with `python -m` from the repository root, not by opening the file directly.
+- Task 4 is the slowest because it generates many RSA-3072 keys. Use `--runs 20` for a quick run.
+- Running a task overwrites its files in [results/](results/) (CSV, JSON, figures and circuit diagrams). Run `git checkout -- results/` to restore the submitted copies.
+
+See each task's README for its options, expected output and explanation of the results.
 
 ## 6. Program Structure
 
@@ -106,88 +109,56 @@ CCS528-Assignment-1/
 ├── task3_mldsa/            # Task 3: PROTECT, ML-DSA (FIPS 204)
 ├── task4_benchmark/        # Task 4: Classical vs PQC comparison
 ├── task5_application/      # Task 5: APPLY, quantum-safe prototype
-├── tests/                  # Correctness tests (pytest)
-├── results/                # Generated outputs (deliverable C evidence)
-│   ├── data/               #   raw CSV/JSON measurements
-│   ├── figures/            #   graphs and circuit diagrams
-│   └── screenshots/        #   terminal screenshots for the report
-├── report/                 # Technical report source and final PDF
-└── rubric/                 # Assignment brief and rubric (reference only)
+└── results/                # Generated outputs (evidence for the technical report)
+    ├── data/               #   raw CSV/JSON measurements
+    ├── figures/            #   graphs and circuit diagrams
+    └── screenshots/        #   terminal screenshots
 ```
 
-## 7. Rubric Checklist (each criterion is 20%)
+## 7. What Each Task Covers
 
-> The rubric says: *"Simply executing existing toolkit examples without modification, experimentation or explanation will receive limited marks."*
-> Every task therefore needs original code, its own experiments, and a written explanation.
-
-### Task 1: Shor's Algorithm (20%)
-- [x] Program prints every stage: Input N → choose a → GCD check → quantum period finding → inverse QFT → measurement → period estimation (continued fractions) → classical factor extraction → factors
-- [x] Circuit diagram saved to `results/figures/`
-- [x] Measurement histogram, with each peak explained (e.g. which values of s/r it represents)
-- [x] Metrics: qubit count, circuit depth, gate counts, number of shots, execution time, success rate across several values of `a` and repeated runs
-- [x] Explanation of how this breaks RSA (factoring N gives φ(N), which gives the private key d), with a toy RSA key recovered as proof
-- [x] **Limitations**: hard-coded modular multiplication, simulator vs real hardware, noise, and qubit estimates for RSA-2048
+### Task 1: Shor's Algorithm
+- Program prints every stage: Input N → choose a → GCD check → quantum period finding → inverse QFT → measurement → period estimation (continued fractions) → classical factor extraction → factors
+- Circuit diagram and measurement histogram saved to `results/figures/task1/`, with each peak explained
+- Metrics: qubit count, circuit depth, gate counts, shots, execution time and success rate for every valid `a`, repeated 5 times
+- Explanation of how this breaks RSA (factoring N gives φ(N), which gives the private key d), with a toy RSA key recovered as proof
+- Limitations: hard-coded modular multiplication, simulator vs real hardware, noise, and qubit estimates for RSA-2048
 
 Details, results and explanation: [task1_shor/README.md](task1_shor/README.md).
 
-### Task 2: ML-KEM (20%)
-- [x] KeyGen → Encaps → (ciphertext, shared secret) → Decaps → recovered secret, run as two separate parties (Alice and Bob)
-- [x] Check that the shared secrets are equal, plus a negative test (tampered ciphertext gives a different secret because of implicit rejection)
-- [x] Shared secret passed through HKDF into AES-256-GCM to encrypt and decrypt a message
-- [x] Metrics for ML-KEM-512, 768 and 1024: keygen, encaps and decaps times (mean and standard deviation over N runs), plus pk, sk and ct sizes
-- [x] Explanation of the Module-LWE basis and why Shor's algorithm does not apply
+### Task 2: ML-KEM
+- KeyGen → Encaps → (ciphertext, shared secret) → Decaps → recovered secret, run as two separate parties (Alice and Bob)
+- Check that the shared secrets are equal, plus negative tests (tampered ciphertext gives a different secret because of implicit rejection)
+- Shared secret passed through HKDF into AES-256-GCM to encrypt and decrypt messages
+- Metrics for ML-KEM-512, 768 and 1024: keygen, encaps and decaps times (mean and standard deviation), plus pk, sk and ct sizes
+- Explanation of the Module-LWE basis and why Shor's algorithm does not apply
 
 Details, results and explanation: [task2_mlkem/README.md](task2_mlkem/README.md).
 
-### Task 3: ML-DSA and Tampering (20%)
-- [x] KeyGen → Sign → Signature → Verify
-- [x] **Experiment A**: original message verifies
-- [x] **Experiment B**: tampered message fails verification
-- [x] Extra tampering tests: flipped signature bit, wrong public key, truncated signature, single-bit message change, transplanted signature, context-string mismatch
-- [x] Metrics for ML-DSA-44, 65 and 87: keygen, sign and verify times, plus pk, sk and signature sizes
-- [x] Explanation of what integrity, authenticity and non-repudiation mean here
+### Task 3: ML-DSA and Tampering
+- KeyGen → Sign → Signature → Verify
+- **Experiment A**: original message verifies
+- **Experiment B**: tampered message fails verification
+- 16 further tampering tests (message, signature, public key, context string) plus 2 control cases
+- Metrics for ML-DSA-44, 65 and 87: keygen, sign and verify times, plus pk, sk and signature sizes
+- Explanation of what integrity, authenticity and non-repudiation mean here
 
 Details, results and explanation: [task3_mldsa/README.md](task3_mldsa/README.md).
 
-### Task 4: Benchmarking (20%)
-- [x] KEM comparison: RSA-OAEP / ECDH (X25519, P-256) vs ML-KEM
-- [x] Signature comparison: RSA-PSS / ECDSA / Ed25519 vs ML-DSA
-- [x] 4 metrics (wall-clock time, CPU time, key/ciphertext/signature sizes, communication overhead), 200 runs with mean and standard deviation
-- [x] Tables and graphs in `results/`
-- [x] Critical analysis of the security, performance and resource trade-offs
+### Task 4: Benchmarking
+- Key establishment: RSA-3072-OAEP, ECDH-P256 and X25519 vs ML-KEM
+- Signatures: RSA-3072-PSS, ECDSA-P256 and Ed25519 vs ML-DSA
+- Metrics: wall-clock time, CPU time (key generation), key/ciphertext/signature sizes and communication overhead, 200 runs with mean and standard deviation
+- Tables and graphs in `results/`, with an analysis of the security, performance and resource trade-offs
 
 Details, results and explanation: [task4_benchmark/README.md](task4_benchmark/README.md).
 
-### Task 5: Quantum-Safe Permissioned Blockchain PoC (20%)
-- [ ] Chosen environment, plus the security problem and threat model (attacker capabilities, assets, out-of-scope assumptions)
-- [ ] Architecture diagram showing wallet signing, secure transport, validator checks, and hash-linked ledger
-- [ ] Normal operation: ML-DSA authentication → ML-KEM key establishment → HKDF → AES-GCM payload encryption → ledger append
-- [ ] At least one attack or failure scenario (e.g. replay, ciphertext tampering, KEM key substitution, ledger mutation) and how it is detected
-- [ ] Explanation of the security purpose of each component and the trusted registry assumptions
-- [ ] Demonstration of the local prototype's evaluation metrics: timings, sizes, throughput, and chain validation results
+### Task 5: Quantum-Safe Permissioned Blockchain
+- Security problem and threat model, architecture, and the roles of ML-DSA-65 (transactions and blocks), ML-KEM-768 + HKDF + AES-256-GCM (confidential submission) and a SHA-256 hash-linked ledger
+- Normal operation, six attack scenarios (replay, ciphertext tampering, KEM key substitution, modified transaction, impersonation, ledger tampering) and how each is detected
+- Evaluation: per-stage timings, bytes per transaction, throughput and chain validation time
 
-#### Task 5 prototype
-
-Run the prototype from the repository root:
-
-```bash
-uv run python -m task5_application.main --mode normal
-uv run python -m task5_application.main --mode attacks
-uv run python -m task5_application.evaluation
-```
-
-This application is a local permissioned-ledger prototype. Wallets derive addresses from their ML-DSA public keys, a trusted registry keeps the authorized participant set and pinned validator ML-KEM public key, and each signed transfer is submitted through a secure ML-KEM-768 + HKDF-SHA-256 + AES-256-GCM channel before being appended to a SHA-256 hash-linked ledger whose blocks the validator signs with ML-DSA-65. The actual implementation lives in `task5_application/main.py` and the modules under `task5_application/pqc_blockchain/`.
-
-```text
-Alice wallet            Secure channel               Validator node                Ledger
-creates tx +    -->  ML-KEM-768 -> HKDF ->   -->  decrypt, verify,        -->  hash-linked blocks,
-ML-DSA signature     AES-256-GCM                  nonce/balance checks,      balances, nonces,
-                                                  signature validation      rejection log
-```
-
-The validator accepts only registered participants, positive transfers, valid ML-DSA signatures, the expected next sender nonce, and enough balance. The sender checks that the validator KEM fingerprint matches the trusted registry value before encapsulating a fresh KEM shared secret, and HKDF binds the AES-GCM key to that KEM ciphertext. The whole signed transaction is encrypted, so the envelope reveals only the KEM ciphertext, the AES-GCM nonce and the AES-GCM ciphertext. Accepted transfers become hash-linked blocks, each signed by the validator's pinned ML-DSA key.
-
-The threat model assumes an untrusted network attacker can read, alter, forge, or replay submitted transactions, and should not learn transaction contents from network traffic, including traffic recorded now and decrypted later with a quantum computer. Confidentiality covers transit only: permissioned ledger members can read accepted transactions. The attack experiments cover replayed transactions, ciphertext modification, KEM key substitution, and mutation of stored blocks. Signatures, nonce checks, AES-GCM tags, and chain validation (hash links plus validator block signatures) detect those failures. A single validator is trusted not to rewrite its own history; removing that trust needs consensus among several validators. The prototype is intentionally limited: it does not implement distributed consensus, network transport, persistent custody, or production key management. The registry, the validator KEM fingerprint and the validator signing key are trusted in this simulation, and the ledger is local and permissioned rather than a production blockchain.
+Details, results and explanation: [task5_application/README.md](task5_application/README.md).
 
 The evaluation script measures the application rather than the primitives (Task 4 already compares those): the mean ± standard deviation time of each stage of one transaction over 1000 runs, the bytes per transaction on the wire and on the ledger against the same design with Ed25519 and X25519 (an estimate made by substituting their sizes), and throughput and full-chain validation time for chains of 10, 100 and 1000 blocks. Results are saved to `results/data/task5/evaluation.json` and `results/figures/task5/evaluation.png`. These outputs support the coursework demo rather than production benchmarking.
 
